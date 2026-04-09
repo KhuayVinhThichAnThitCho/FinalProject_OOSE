@@ -24,21 +24,21 @@ public class ManagerBookController {
     }
 
     @GetMapping
-    public List<Book> list() {
-        return bookRepository.findAll();
+    public List<Book> viewBookList() {
+        return bookRepository.findAllBooks();
     }
 
     @GetMapping("/{id}")
-    public Book get(@PathVariable("id") Long bookId) {
-        return bookRepository.findById(bookId).orElseThrow(() -> new IllegalArgumentException("Book not found"));
+    public Book viewBookDetail(@PathVariable("id") Long bookId) {
+        return bookRepository.findBookById(bookId).orElseThrow(() -> new IllegalArgumentException("Book not found"));
     }
 
     @PutMapping("/{id}/price")
-    public PricingService.PricingResult updatePrice(
+    public PricingService.PricingResult confirmUpdate(
             @PathVariable("id") Long bookId,
             @Valid @RequestBody UpdateBookPriceRequest req
     ) {
-        return pricingService.updatePrice(bookId, req.newSalePrice(), req.effectiveFrom(), req.allowLossSale());
+        return pricingService.confirmUpdate(bookId, req.newSalePrice(), req.effectiveFrom(), req.allowLossSale());
     }
 }
 

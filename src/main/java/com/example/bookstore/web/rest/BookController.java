@@ -19,14 +19,14 @@ public class BookController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('CUSTOMER','STAFF','MANAGER')")
-    public List<Book> list() {
-        return bookRepository.findAll();
+    public List<Book> viewBookList() {
+        return bookRepository.findAllBooks();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('CUSTOMER','STAFF','MANAGER')")
-    public Book get(@PathVariable("id") Long id) {
-        return bookRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Book not found"));
+    public Book viewBookDetail(@PathVariable("id") Long bookId) {
+        return bookRepository.findBookById(bookId).orElseThrow(() -> new IllegalArgumentException("Book not found"));
     }
 }
 

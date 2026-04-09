@@ -54,6 +54,11 @@ public class Book extends AuditableEntity {
         this.salePrice = salePrice;
     }
 
+    public void setSalePrice(Long newPrice, Instant applyTime) {
+        setPrice(newPrice);
+        setSalePriceEffectiveFrom(applyTime == null ? Instant.now() : applyTime);
+    }
+
     public Instant getSalePriceEffectiveFrom() {
         return salePriceEffectiveFrom;
     }

@@ -233,7 +233,7 @@ public class OrderService {
         Order o = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        if (o.getStatus() != OrderStatus.PAID) {
+        if (!o.isOrderStatusPending()) {
             throw new IllegalStateException("Đơn hàng đã được xác nhận");
         }
 
@@ -245,9 +245,15 @@ public class OrderService {
             }
         }
 
-        o.setStatus(OrderStatus.SHIPPING);
+        o.updateStatus(OrderStatus.SHIPPING);
         orderRepository.save(o);
         return new CheckoutResult(o.getId(), o.getStatus(), "Đơn hàng đã chuyển sang trạng thái đang giao hàng!");
+    }
+
+    // Named like in staff confirm sequence diagram
+    @Transactional
+    public CheckoutResult confirmOrder(Long orderId) {
+        return startShipping(orderId);
     }
 
     public record ItemRequest(Long bookId, Integer quantity) {}

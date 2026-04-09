@@ -26,7 +26,7 @@ public class StaffOrderController {
     }
 
     @GetMapping("/pending")
-    public List<OrderSummaryResponse> listPending() {
+    public List<OrderSummaryResponse> viewOrderList() {
         return orderRepository.findByStatus(OrderStatus.PAID).stream()
                 .map(o -> new OrderSummaryResponse(o.getId(), o.getOrderedAt(), o.getTotalAmount(), o.getStatus()))
                 .toList();
@@ -66,7 +66,7 @@ public class StaffOrderController {
 
     @PostMapping("/{id}/confirm")
     public String confirmOrder(@PathVariable("id") Long orderId) {
-        return orderService.startShipping(orderId).message();
+        return orderService.confirmOrder(orderId).message();
     }
 
     @PostMapping("/{id}/cancel-processing")

@@ -24,43 +24,40 @@ public class ReportController {
     }
 
     @GetMapping("/sales")
-    public ReportService.SalesReportData sales(
+    public ReportService.SalesReportData viewSalesReport(
             @RequestParam("from") String from,
             @RequestParam("to") String to,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "status", required = false) String status
     ) {
-        return reportService.buildSalesReport(Instant.parse(from), Instant.parse(to), category, status);
+        return reportService.generateReport(Instant.parse(from), Instant.parse(to), category, status);
     }
 
     @GetMapping("/sales/export")
-    public ResponseEntity<byte[]> export(
+    public ResponseEntity<byte[]> exportReportFile(
             @RequestParam("from") String from,
             @RequestParam("to") String to,
             @RequestParam("format") String format,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "status", required = false) String status
     ) {
-        ReportService.SalesReportData data = reportService.buildSalesReport(Instant.parse(from), Instant.parse(to), category, status);
+        ReportService.SalesReportData data = reportService.generateReport(Instant.parse(from), Instant.parse(to), category, status);
+
         String f = format == null ? "" : format.toLowerCase();
+        byte[] bytes = reportService.generateFile(data, f);
 
         if (f.equals("xlsx")) {
-            byte[] bytes = reportService.exportXlsx(data);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sales-report.xlsx\"")
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(bytes);
         }
 
-        if (f.equals("pdf")) {
-            byte[] bytes = reportService.exportPdf(data);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sales-report.pdf\"")
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .body(bytes);
-        }
-
-        throw new IllegalArgumentException("format must be xlsx or pdf");
+        // pdf
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sales-report.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(bytes);
     }
 }
 

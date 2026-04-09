@@ -17,12 +17,12 @@ public class PricingService {
     }
 
     @Transactional
-    public PricingResult updatePrice(Long bookId, Long newSalePrice, Instant effectiveFrom, boolean allowLossSale) {
+    public PricingResult confirmUpdate(Long bookId, Long newSalePrice, Instant applyTime, boolean allowLossSale) {
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("Book not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách"));
 
         if (newSalePrice <= 0) {
-            throw new IllegalArgumentException("Invalid sale price");
+            throw new IllegalArgumentException("Giá bán không hợp lệ");
         }
 
         if (newSalePrice < book.getCostPrice() && !allowLossSale) {
@@ -34,9 +34,15 @@ public class PricingService {
         }
 
         book.setPrice(newSalePrice);
-        book.setSalePriceEffectiveFrom(effectiveFrom == null ? Instant.now() : effectiveFrom);
+        book.setSalePrice(newSalePrice, applyTime);
         bookRepository.save(book);
         return new PricingResult(true, "Cập nhật giá bán thành công", book.getCostPrice(), book.getPrice(), newSalePrice);
+    }
+
+    // Backward-compatible name
+    @Transactional
+    public PricingResult updatePrice(Long bookId, Long newSalePrice, Instant effectiveFrom, boolean allowLossSale) {
+        return confirmUpdate(bookId, newSalePrice, effectiveFrom, allowLossSale);
     }
 
     public record PricingResult(

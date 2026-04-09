@@ -30,24 +30,15 @@ public class ReportService {
         this.orderRepository = orderRepository;
     }
 
+    // Named like in sequence diagram
+    public SalesReportData generateReport(Instant from, Instant to, String category, String orderStatus) {
+        return buildSalesReport(from, to, category, orderStatus);
+    }
+
     public SalesReportData buildSalesReport(Instant from, Instant to, String category, String status) {
         validateRange(from, to);
 
-        List<Order> orders = orderRepository.findByOrderedAtBetween(from, to).stream()
-                .filter(o -> {
-                    if (status == null || status.isBlank()) {
-                        return o.getStatus() == OrderStatus.PAID;
-                    }
-                    return o.getStatus().name().equalsIgnoreCase(status);
-                })
-                .filter(o -> {
-                    if (category == null || category.isBlank()) {
-                        return true;
-                    }
-                    return o.getItems().stream()
-                            .anyMatch(i -> category.equalsIgnoreCase(i.getBook().getCategory()));
-                })
-                .toList();
+        List<Order> orders = getSalesData(from, to, category, status);
 
         long totalOrders = orders.size();
         long totalRevenue = orders.stream().mapToLong(Order::getTotalAmount).sum();
@@ -82,6 +73,25 @@ public class ReportService {
 
         String message = totalOrders == 0 ? "Không có dữ liệu bán hàng phù hợp với tiêu chí tìm kiếm" : null;
         return new SalesReportData(from, to, totalOrders, totalRevenue, prevRevenue, growthPercent, totalBooksSold, topBooks, message);
+    }
+
+    // Named like in sequence diagram
+    public List<Order> getSalesData(Instant from, Instant to, String category, String orderStatus) {
+        return orderRepository.findByOrderedAtBetween(from, to).stream()
+                .filter(o -> {
+                    if (orderStatus == null || orderStatus.isBlank()) {
+                        return o.getStatus() == OrderStatus.PAID;
+                    }
+                    return o.getStatus().name().equalsIgnoreCase(orderStatus);
+                })
+                .filter(o -> {
+                    if (category == null || category.isBlank()) {
+                        return true;
+                    }
+                    return o.getItems().stream()
+                            .anyMatch(i -> category.equalsIgnoreCase(i.getBook().getCategory()));
+                })
+                .toList();
     }
 
     public byte[] exportXlsx(SalesReportData data) {
@@ -172,8 +182,18 @@ public class ReportService {
         }
         Duration d = Duration.between(from, to);
         if (d.toDays() > 366) {
-            throw new IllegalArgumentException("Khoảng thời gian truy xuất vượt quá giới hạn cho phép. Vui lòng chọn khoảng thời gian tối đa là 12 tháng");
+            throw new IllegalArgumentException("Khoảng thời gian truy xuất vượt quá giới hạn cho phép. Vui lòng chọn khoảng thời gian tối đa là 12 tháng hoặc sử dụng tính năng Xuất báo cáo qua Email");
         }
+    }
+
+    // Named like in sequence diagram
+    public byte[] generateFile(SalesReportData data, String fileFormat) {
+        String f = fileFormat == null ? "" : fileFormat.toLowerCase();
+        return switch (f) {
+            case "xlsx" -> exportXlsx(data);
+            case "pdf" -> exportPdf(data);
+            default -> throw new IllegalArgumentException("format must be xlsx or pdf");
+        };
     }
 
     public record SalesReportData(

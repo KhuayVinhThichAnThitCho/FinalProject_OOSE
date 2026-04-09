@@ -111,6 +111,12 @@ public class Order extends AuditableEntity {
         return status;
     }
 
+    // Named like in staff confirm sequence diagram:
+    // for staff, "pending" means "waiting for confirmation" (PAID).
+    public boolean isOrderStatusPending() {
+        return status == OrderStatus.PAID;
+    }
+
     public void updateStatus(OrderStatus status) {
         this.status = status;
     }
