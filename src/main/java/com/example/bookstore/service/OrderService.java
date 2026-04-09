@@ -52,7 +52,7 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng"));
 
         PhuongThucThanhToan method = phuongThucThanhToanRepository.findAll().stream()
-                .filter(m -> m.getTenPhuongThuc().equalsIgnoreCase(paymentMethodCode) || paymentMethodCode.startsWith(m.getTenPhuongThuc()))
+                .filter(m -> m.getTenPhuongThuc().equalsIgnoreCase(paymentMethodCode) || paymentMethodCode.toUpperCase().startsWith(m.getTenPhuongThuc().toUpperCase()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Phương thức thanh toán không hợp lệ"));
 

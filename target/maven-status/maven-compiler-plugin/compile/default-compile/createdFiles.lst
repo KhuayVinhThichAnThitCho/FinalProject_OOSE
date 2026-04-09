@@ -25,6 +25,7 @@ com\example\bookstore\service\PaymentRequest.class
 com\example\bookstore\web\dto\OrderSummaryResponse.class
 com\example\bookstore\web\rest\StaffOrderController.class
 com\example\bookstore\domain\entity\UserAccount.class
+com\example\bookstore\web\rest\ApiExceptionHandler$ApiError.class
 com\example\bookstore\domain\entity\ThanhToan.class
 com\example\bookstore\service\AuthService.class
 com\example\bookstore\web\rest\AuthController.class
@@ -47,6 +48,7 @@ com\example\bookstore\service\AuthService$AuthResult.class
 com\example\bookstore\service\OrderService$CheckoutResult.class
 com\example\bookstore\web\dto\UpdateBookPriceRequest.class
 com\example\bookstore\config\JwtService.class
+com\example\bookstore\web\rest\ApiExceptionHandler.class
 com\example\bookstore\service\MockPaymentGateway.class
 com\example\bookstore\repository\YeuCauHuyDonRepository.class
 com\example\bookstore\service\PaymentResult.class

@@ -25,7 +25,7 @@ public class YeuCauHuyDon extends AuditableEntity {
     private Instant ngayYeuCau;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trang_thai_yeu_cau", nullable = false)
+    @Column(name = "trang_thai_yeu_cau", nullable = false, columnDefinition = "varchar(50)")
     private CancelRequestStatus trangThaiYeuCau;
 
     public Long getId() {

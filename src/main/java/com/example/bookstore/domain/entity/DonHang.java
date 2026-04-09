@@ -31,7 +31,7 @@ public class DonHang extends AuditableEntity {
     private Long tongTien;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trang_thai", nullable = false)
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "varchar(50)")
     private OrderStatus trangThai;
 
     @Version

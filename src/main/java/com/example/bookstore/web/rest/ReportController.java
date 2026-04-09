@@ -4,6 +4,7 @@ import com.example.bookstore.service.ReportService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,6 +14,7 @@ import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/reports")
+@PreAuthorize("hasRole('MANAGER')")
 public class ReportController {
 
     private final ReportService reportService;
@@ -22,17 +24,24 @@ public class ReportController {
     }
 
     @GetMapping("/sales")
-    public ReportService.SalesReportData sales(@RequestParam("from") String from, @RequestParam("to") String to) {
-        return reportService.buildSalesReport(Instant.parse(from), Instant.parse(to));
+    public ReportService.SalesReportData sales(
+            @RequestParam("from") String from,
+            @RequestParam("to") String to,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "status", required = false) String status
+    ) {
+        return reportService.buildSalesReport(Instant.parse(from), Instant.parse(to), category, status);
     }
 
     @GetMapping("/sales/export")
     public ResponseEntity<byte[]> export(
             @RequestParam("from") String from,
             @RequestParam("to") String to,
-            @RequestParam("format") String format
+            @RequestParam("format") String format,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "status", required = false) String status
     ) {
-        ReportService.SalesReportData data = reportService.buildSalesReport(Instant.parse(from), Instant.parse(to));
+        ReportService.SalesReportData data = reportService.buildSalesReport(Instant.parse(from), Instant.parse(to), category, status);
         String f = format == null ? "" : format.toLowerCase();
 
         if (f.equals("xlsx")) {

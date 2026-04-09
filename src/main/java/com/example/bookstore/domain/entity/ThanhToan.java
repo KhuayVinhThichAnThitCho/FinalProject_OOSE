@@ -26,7 +26,7 @@ public class ThanhToan extends AuditableEntity {
     private Long soTien;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trang_thai", nullable = false)
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "varchar(50)")
     private PaymentStatus trangThai;
 
     @Column(name = "ngay_thanh_toan", nullable = false)

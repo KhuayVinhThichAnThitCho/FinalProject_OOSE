@@ -32,7 +32,7 @@ public class CancelRequestService {
             throw new IllegalStateException("Đơn hàng đã có yêu cầu hủy");
         });
 
-        if (order.getTrangThai() == OrderStatus.DANG_GIAO) {
+        if (order.getTrangThai() == OrderStatus.DANG_GIAO || order.getTrangThai() == OrderStatus.DA_GIAO) {
             throw new IllegalStateException("Không thể hủy đơn hàng này");
         }
 
@@ -57,7 +57,7 @@ public class CancelRequestService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy yêu cầu"));
 
         DonHang order = req.getDonHang();
-        if (order.getTrangThai() == OrderStatus.DANG_GIAO) {
+        if (order.getTrangThai() == OrderStatus.DANG_GIAO || order.getTrangThai() == OrderStatus.DA_GIAO) {
             throw new IllegalStateException("Không thể hủy đơn hàng này");
         }
         order.setTrangThai(OrderStatus.DA_HUY);

@@ -5,6 +5,8 @@ import com.example.bookstore.repository.SachRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 @Service
 public class PricingService {
 
@@ -15,7 +17,7 @@ public class PricingService {
     }
 
     @Transactional
-    public PricingResult updatePrice(Long sachId, Long giaBanMoi, boolean chapNhanBanLo) {
+    public PricingResult updatePrice(Long sachId, Long giaBanMoi, Instant thoiGianApDung, boolean chapNhanBanLo) {
         Sach sach = sachRepository.findById(sachId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách"));
 
@@ -32,6 +34,7 @@ public class PricingService {
         }
 
         sach.setGiaBan(giaBanMoi);
+        sach.setGiaBanApDungTu(thoiGianApDung == null ? Instant.now() : thoiGianApDung);
         sachRepository.save(sach);
         return new PricingResult(true, "Cập nhật giá bán thành công", sach.getGiaNhap(), sach.getGiaBan(), giaBanMoi);
     }

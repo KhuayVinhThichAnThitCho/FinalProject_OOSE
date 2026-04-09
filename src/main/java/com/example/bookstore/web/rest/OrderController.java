@@ -9,6 +9,7 @@ import com.example.bookstore.web.dto.OrderDetailResponse;
 import com.example.bookstore.web.dto.OrderItemDto;
 import com.example.bookstore.web.dto.OrderSummaryResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,7 @@ public class OrderController {
     }
 
     @PostMapping("/checkout")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public CheckoutResponse checkout(@Valid @RequestBody CheckoutRequest request, Authentication authentication) {
         String username = authentication == null ? "anonymous" : authentication.getName();
 
@@ -51,6 +53,7 @@ public class OrderController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('CUSTOMER')")
     public List<OrderSummaryResponse> listByCustomer(@RequestParam("khachHangId") Long khachHangId) {
         return donHangRepository.findByKhachHangIdOrderByNgayDatDesc(khachHangId).stream()
                 .map(o -> new OrderSummaryResponse(o.getId(), o.getNgayDat(), o.getTongTien(), o.getTrangThai()))
@@ -58,6 +61,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public OrderDetailResponse getDetail(
             @PathVariable("id") Long orderId,
             @RequestParam("khachHangId") Long khachHangId

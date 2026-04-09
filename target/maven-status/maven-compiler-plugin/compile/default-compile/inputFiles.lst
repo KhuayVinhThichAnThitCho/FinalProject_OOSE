@@ -44,6 +44,7 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderDe
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderItemDto.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderSummaryResponse.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\UpdateBookPriceRequest.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\rest\ApiExceptionHandler.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\rest\AuthController.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\rest\CancelRequestController.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\rest\ManagerBookController.java

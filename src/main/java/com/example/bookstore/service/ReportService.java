@@ -30,24 +30,47 @@ public class ReportService {
         this.donHangRepository = donHangRepository;
     }
 
-    public SalesReportData buildSalesReport(Instant from, Instant to) {
+    public SalesReportData buildSalesReport(Instant from, Instant to, String category, String status) {
         validateRange(from, to);
 
         List<DonHang> orders = donHangRepository.findByNgayDatBetween(from, to).stream()
-                .filter(o -> o.getTrangThai() == OrderStatus.DA_THANH_TOAN)
+                .filter(o -> {
+                    if (status == null || status.isBlank()) {
+                        return o.getTrangThai() == OrderStatus.DA_THANH_TOAN;
+                    }
+                    return o.getTrangThai().name().equalsIgnoreCase(status);
+                })
+                .filter(o -> {
+                    if (category == null || category.isBlank()) {
+                        return true;
+                    }
+                    return o.getChiTietDonHangs().stream()
+                            .anyMatch(i -> category.equalsIgnoreCase(i.getSach().getDanhMuc()));
+                })
                 .toList();
 
         long totalOrders = orders.size();
         long totalRevenue = orders.stream().mapToLong(DonHang::getTongTien).sum();
 
+        // Compare to previous period (same length)
+        Duration period = Duration.between(from, to);
+        Instant prevTo = from;
+        Instant prevFrom = from.minus(period);
+        long prevRevenue = donHangRepository.findByNgayDatBetween(prevFrom, prevTo).stream()
+                .filter(o -> o.getTrangThai() == OrderStatus.DA_THANH_TOAN)
+                .mapToLong(DonHang::getTongTien)
+                .sum();
+        Double growthPercent = prevRevenue == 0 ? null : ((totalRevenue - prevRevenue) * 100.0) / prevRevenue;
+
         Map<Long, BookAgg> bookAgg = orders.stream()
                 .flatMap(o -> o.getChiTietDonHangs().stream())
+                .filter(i -> category == null || category.isBlank() || category.equalsIgnoreCase(i.getSach().getDanhMuc()))
                 .collect(Collectors.groupingBy(
                         i -> i.getSach().getId(),
                         Collectors.collectingAndThen(Collectors.toList(), list -> {
                             ChiTietDonHang first = list.get(0);
                             long qty = list.stream().mapToLong(ChiTietDonHang::getSoLuong).sum();
-                            return new BookAgg(first.getSach().getId(), first.getSach().getTenSach(), qty);
+                            return new BookAgg(first.getSach().getId(), first.getSach().getTenSach(), first.getSach().getDanhMuc(), qty);
                         })
                 ));
 
@@ -57,7 +80,8 @@ public class ReportService {
                 .limit(10)
                 .toList();
 
-        return new SalesReportData(from, to, totalOrders, totalRevenue, totalBooksSold, topBooks);
+        String message = totalOrders == 0 ? "Không có dữ liệu bán hàng phù hợp với tiêu chí tìm kiếm" : null;
+        return new SalesReportData(from, to, totalOrders, totalRevenue, prevRevenue, growthPercent, totalBooksSold, topBooks, message);
     }
 
     public byte[] exportXlsx(SalesReportData data) {
@@ -79,6 +103,12 @@ public class ReportService {
             Row metrics2 = s.createRow(r++);
             metrics2.createCell(0).setCellValue("TotalRevenue");
             metrics2.createCell(1).setCellValue(data.totalRevenue());
+            Row metrics2b = s.createRow(r++);
+            metrics2b.createCell(0).setCellValue("PrevRevenue");
+            metrics2b.createCell(1).setCellValue(data.prevRevenue());
+            Row metrics2c = s.createRow(r++);
+            metrics2c.createCell(0).setCellValue("GrowthPercent");
+            metrics2c.createCell(1).setCellValue(data.growthPercent() == null ? "" : String.valueOf(data.growthPercent()));
             Row metrics3 = s.createRow(r++);
             metrics3.createCell(0).setCellValue("TotalBooksSold");
             metrics3.createCell(1).setCellValue(data.totalBooksSold());
@@ -89,13 +119,15 @@ public class ReportService {
             Row tbHeader = s.createRow(r++);
             tbHeader.createCell(0).setCellValue("BookId");
             tbHeader.createCell(1).setCellValue("BookName");
-            tbHeader.createCell(2).setCellValue("QtySold");
+            tbHeader.createCell(2).setCellValue("Category");
+            tbHeader.createCell(3).setCellValue("QtySold");
 
             for (BookAgg b : data.topBooks()) {
                 Row row = s.createRow(r++);
                 row.createCell(0).setCellValue(b.sachId());
                 row.createCell(1).setCellValue(b.tenSach());
-                row.createCell(2).setCellValue(b.soLuongBan());
+                row.createCell(2).setCellValue(b.danhMuc() == null ? "" : b.danhMuc());
+                row.createCell(3).setCellValue(b.soLuongBan());
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -117,7 +149,12 @@ public class ReportService {
             doc.add(new Paragraph("To: " + data.to()));
             doc.add(new Paragraph("Total orders: " + data.totalOrders()));
             doc.add(new Paragraph("Total revenue: " + data.totalRevenue()));
+            doc.add(new Paragraph("Prev revenue: " + data.prevRevenue()));
+            doc.add(new Paragraph("Growth percent: " + (data.growthPercent() == null ? "N/A" : data.growthPercent())));
             doc.add(new Paragraph("Total books sold: " + data.totalBooksSold()));
+            if (data.message() != null) {
+                doc.add(new Paragraph("Message: " + data.message()));
+            }
             doc.add(new Paragraph("Top books:"));
             for (BookAgg b : data.topBooks()) {
                 doc.add(new Paragraph("- " + b.tenSach() + " (" + b.sachId() + "): " + b.soLuongBan()));
@@ -144,12 +181,16 @@ public class ReportService {
             Instant to,
             long totalOrders,
             long totalRevenue,
+            long prevRevenue,
+            Double growthPercent,
             long totalBooksSold,
             List<BookAgg> topBooks
+            ,
+            String message
     ) {
     }
 
-    public record BookAgg(Long sachId, String tenSach, long soLuongBan) {
+    public record BookAgg(Long sachId, String tenSach, String danhMuc, long soLuongBan) {
     }
 }
 

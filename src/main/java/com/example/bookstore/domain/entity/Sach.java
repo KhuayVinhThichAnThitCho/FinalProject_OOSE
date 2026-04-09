@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "sach")
 public class Sach extends AuditableEntity {
@@ -23,8 +25,14 @@ public class Sach extends AuditableEntity {
     @Column(name = "gia_ban", nullable = false)
     private Long giaBan;
 
+    @Column(name = "gia_ban_ap_dung_tu")
+    private Instant giaBanApDungTu;
+
     @Column(name = "gia_nhap", nullable = false)
     private Long giaNhap;
+
+    @Column(name = "danh_muc")
+    private String danhMuc;
 
     @Column(name = "so_luong_ton", nullable = false)
     private Integer soLuongTon;
@@ -52,12 +60,28 @@ public class Sach extends AuditableEntity {
         this.giaBan = giaBan;
     }
 
+    public Instant getGiaBanApDungTu() {
+        return giaBanApDungTu;
+    }
+
+    public void setGiaBanApDungTu(Instant giaBanApDungTu) {
+        this.giaBanApDungTu = giaBanApDungTu;
+    }
+
     public Long getGiaNhap() {
         return giaNhap;
     }
 
     public void setGiaNhap(Long giaNhap) {
         this.giaNhap = giaNhap;
+    }
+
+    public String getDanhMuc() {
+        return danhMuc;
+    }
+
+    public void setDanhMuc(String danhMuc) {
+        this.danhMuc = danhMuc;
     }
 
     public Integer getSoLuongTon() {
