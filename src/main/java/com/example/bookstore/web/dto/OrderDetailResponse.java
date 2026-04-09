@@ -8,16 +8,16 @@ import java.util.List;
 public record OrderDetailResponse(
         Long orderId,
         Instant ngayDat,
-        Long tongTien,
-        OrderStatus trangThai,
+        Long totalAmount,
+        OrderStatus status,
         ShippingInfo shipping,
         List<OrderItemDto> items
 ) {
     public record ShippingInfo(
-            String diaChiGiaoHang,
-            String nguoiNhan,
-            String soDienThoaiNhan,
-            String trangThaiGiaoHang
+            String address,
+            String receiverName,
+            String receiverPhone,
+            String shippingStatus
     ) {
     }
 }

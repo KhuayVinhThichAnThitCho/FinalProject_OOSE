@@ -25,12 +25,12 @@ public class UserAccount extends AuditableEntity {
     private Set<String> roles;
 
     @OneToOne
-    @JoinColumn(name = "khach_hang_id")
-    private KhachHang khachHang;
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
 
     @OneToOne
-    @JoinColumn(name = "nhan_vien_id")
-    private NhanVien nhanVien;
+    @JoinColumn(name = "staff_id")
+    private Staff staff;
 
     public Long getId() {
         return id;
@@ -60,20 +60,20 @@ public class UserAccount extends AuditableEntity {
         this.roles = roles;
     }
 
-    public KhachHang getKhachHang() {
-        return khachHang;
+    public Customer getCustomer() {
+        return customer;
     }
 
-    public void setKhachHang(KhachHang khachHang) {
-        this.khachHang = khachHang;
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
     }
 
-    public NhanVien getNhanVien() {
-        return nhanVien;
+    public Staff getStaff() {
+        return staff;
     }
 
-    public void setNhanVien(NhanVien nhanVien) {
-        this.nhanVien = nhanVien;
+    public void setStaff(Staff staff) {
+        this.staff = staff;
     }
 }
 

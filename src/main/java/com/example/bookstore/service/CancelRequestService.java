@@ -1,11 +1,11 @@
 package com.example.bookstore.service;
 
-import com.example.bookstore.domain.entity.DonHang;
-import com.example.bookstore.domain.entity.YeuCauHuyDon;
+import com.example.bookstore.domain.entity.CancellationRequest;
+import com.example.bookstore.domain.entity.Order;
 import com.example.bookstore.domain.enums.CancelRequestStatus;
 import com.example.bookstore.domain.enums.OrderStatus;
-import com.example.bookstore.repository.DonHangRepository;
-import com.example.bookstore.repository.YeuCauHuyDonRepository;
+import com.example.bookstore.repository.CancellationRequestRepository;
+import com.example.bookstore.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,62 +15,62 @@ import java.time.Instant;
 @Service
 public class CancelRequestService {
 
-    private final DonHangRepository donHangRepository;
-    private final YeuCauHuyDonRepository yeuCauHuyDonRepository;
+    private final OrderRepository orderRepository;
+    private final CancellationRequestRepository cancellationRequestRepository;
 
-    public CancelRequestService(DonHangRepository donHangRepository, YeuCauHuyDonRepository yeuCauHuyDonRepository) {
-        this.donHangRepository = donHangRepository;
-        this.yeuCauHuyDonRepository = yeuCauHuyDonRepository;
+    public CancelRequestService(OrderRepository orderRepository, CancellationRequestRepository cancellationRequestRepository) {
+        this.orderRepository = orderRepository;
+        this.cancellationRequestRepository = cancellationRequestRepository;
     }
 
     @Transactional
-    public YeuCauHuyDon create(Long donHangId, String lyDo) {
-        DonHang order = donHangRepository.findById(donHangId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+    public CancellationRequest create(Long orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        yeuCauHuyDonRepository.findByDonHangId(donHangId).ifPresent(x -> {
-            throw new IllegalStateException("Đơn hàng đã có yêu cầu hủy");
+        cancellationRequestRepository.findByOrderId(orderId).ifPresent(x -> {
+            throw new IllegalStateException("Order already has a cancellation request");
         });
 
-        if (order.getTrangThai() == OrderStatus.DANG_GIAO || order.getTrangThai() == OrderStatus.DA_GIAO) {
-            throw new IllegalStateException("Không thể hủy đơn hàng này");
+        if (order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel this order");
         }
 
-        if (order.getNgayDat() != null) {
-            Duration age = Duration.between(order.getNgayDat(), Instant.now());
+        if (order.getOrderedAt() != null) {
+            Duration age = Duration.between(order.getOrderedAt(), Instant.now());
             if (age.toHours() > 24) {
-                throw new IllegalStateException("Đã quá thời gian cho phép hủy đơn");
+                throw new IllegalStateException("Cancellation window expired");
             }
         }
 
-        YeuCauHuyDon req = new YeuCauHuyDon();
-        req.setDonHang(order);
-        req.setLyDoHuy(lyDo);
-        req.setNgayYeuCau(Instant.now());
-        req.setTrangThaiYeuCau(CancelRequestStatus.PENDING);
-        return yeuCauHuyDonRepository.save(req);
+        CancellationRequest req = new CancellationRequest();
+        req.setOrder(order);
+        req.setReason(reason);
+        req.setRequestedAt(Instant.now());
+        req.setStatus(CancelRequestStatus.PENDING);
+        return cancellationRequestRepository.save(req);
     }
 
     @Transactional
     public String approve(Long requestId) {
-        YeuCauHuyDon req = yeuCauHuyDonRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy yêu cầu"));
+        CancellationRequest req = cancellationRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Request not found"));
 
-        DonHang order = req.getDonHang();
-        if (order.getTrangThai() == OrderStatus.DANG_GIAO || order.getTrangThai() == OrderStatus.DA_GIAO) {
-            throw new IllegalStateException("Không thể hủy đơn hàng này");
+        Order order = req.getOrder();
+        if (order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel this order");
         }
-        order.setTrangThai(OrderStatus.DA_HUY);
-        req.setTrangThaiYeuCau(CancelRequestStatus.APPROVED);
+        order.setStatus(OrderStatus.CANCELLED);
+        req.setStatus(CancelRequestStatus.APPROVED);
 
         return "Hủy đơn hàng thành công";
     }
 
     @Transactional
     public String reject(Long requestId) {
-        YeuCauHuyDon req = yeuCauHuyDonRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy yêu cầu"));
-        req.setTrangThaiYeuCau(CancelRequestStatus.REJECTED);
+        CancellationRequest req = cancellationRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Request not found"));
+        req.setStatus(CancelRequestStatus.REJECTED);
         return "Yêu cầu hủy đã bị từ chối";
     }
 }

@@ -7,8 +7,8 @@ import java.time.Instant;
 public record OrderSummaryResponse(
         Long orderId,
         Instant ngayDat,
-        Long tongTien,
-        OrderStatus trangThai
+        Long totalAmount,
+        OrderStatus status
 ) {
 }
 

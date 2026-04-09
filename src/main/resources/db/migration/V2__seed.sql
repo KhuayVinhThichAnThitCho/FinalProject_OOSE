@@ -1,31 +1,31 @@
 -- Seed data for demo/dev
 
-INSERT INTO phuong_thuc_thanh_toan (ten_phuong_thuc, mo_ta, created_at, created_by)
+INSERT INTO payment_methods (code, description, created_at, created_by)
 VALUES
-  ('ONLINE', 'Thanh toan truc tuyen qua cong thanh toan', NOW(6), 'seed'),
-  ('COD', 'Thanh toan khi nhan hang', NOW(6), 'seed');
+  ('ONLINE', 'Online payment via payment gateway', NOW(6), 'seed'),
+  ('COD', 'Cash on delivery', NOW(6), 'seed');
 
-INSERT INTO sach (ten_sach, gia_ban, gia_nhap, so_luong_ton, version, created_at, created_by)
+INSERT INTO books (title, sale_price, sale_price_effective_from, cost_price, category, stock_quantity, version, created_at, created_by)
 VALUES
-  ('Clean Code', 150000, 100000, 50, 0, NOW(6), 'seed'),
-  ('Refactoring', 200000, 140000, 30, 0, NOW(6), 'seed'),
-  ('Design Patterns', 250000, 170000, 20, 0, NOW(6), 'seed');
+  ('Clean Code', 150000, NOW(6), 100000, 'Software', 50, 0, NOW(6), 'seed'),
+  ('Refactoring', 200000, NOW(6), 140000, 'Software', 30, 0, NOW(6), 'seed'),
+  ('Design Patterns', 250000, NOW(6), 170000, 'Software', 20, 0, NOW(6), 'seed');
 
-INSERT INTO khach_hang (ten_khach_hang, email, so_dien_thoai, dia_chi, created_at, created_by)
+INSERT INTO customers (full_name, email, phone, address, created_at, created_by)
 VALUES
   ('Demo Customer', 'customer@example.com', '0900000000', 'Ho Chi Minh', NOW(6), 'seed');
 
-INSERT INTO nhan_vien (ten_nhan_vien, created_at, created_by)
+INSERT INTO staff (full_name, created_at, created_by)
 VALUES
   ('Demo Staff', NOW(6), 'seed'),
   ('Demo Manager', NOW(6), 'seed');
 
 -- password is 'password' (BCrypt)
-INSERT INTO user_account (username, password_hash, khach_hang_id, nhan_vien_id, created_at, created_by)
+INSERT INTO user_account (username, password_hash, customer_id, staff_id, created_at, created_by)
 VALUES
-  ('customer', '$2a$10$Qm5WvJw5r5fZKJ5mA9o1He0n6c9xT6pGqvW3b5J8ZqV7gQGZ0e1yK', 1, NULL, NOW(6), 'seed'),
-  ('staff',    '$2a$10$Qm5WvJw5r5fZKJ5mA9o1He0n6c9xT6pGqvW3b5J8ZqV7gQGZ0e1yK', NULL, 1, NOW(6), 'seed'),
-  ('manager',  '$2a$10$Qm5WvJw5r5fZKJ5mA9o1He0n6c9xT6pGqvW3b5J8ZqV7gQGZ0e1yK', NULL, 2, NOW(6), 'seed');
+  ('customer', '{noop}password', 1, NULL, NOW(6), 'seed'),
+  ('staff',    '{noop}password', NULL, 1, NOW(6), 'seed'),
+  ('manager',  '{noop}password', NULL, 2, NOW(6), 'seed');
 
 INSERT INTO user_role (user_id, role)
 VALUES

@@ -1,13 +1,14 @@
 package com.example.bookstore.service;
 
-import com.example.bookstore.domain.entity.KhachHang;
-import com.example.bookstore.domain.entity.PhuongThucThanhToan;
-import com.example.bookstore.domain.entity.Sach;
+import com.example.bookstore.domain.entity.Book;
+import com.example.bookstore.domain.entity.Customer;
+import com.example.bookstore.domain.entity.PaymentMethod;
 import com.example.bookstore.domain.enums.OrderStatus;
-import com.example.bookstore.repository.DonHangRepository;
-import com.example.bookstore.repository.KhachHangRepository;
-import com.example.bookstore.repository.PhuongThucThanhToanRepository;
-import com.example.bookstore.repository.SachRepository;
+import com.example.bookstore.repository.BookRepository;
+import com.example.bookstore.repository.CustomerRepository;
+import com.example.bookstore.repository.OrderRepository;
+import com.example.bookstore.repository.PaymentMethodRepository;
+import com.example.bookstore.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,50 +26,53 @@ class OrderServiceTest {
     @Autowired
     OrderService orderService;
     @Autowired
-    KhachHangRepository khachHangRepository;
+    CustomerRepository customerRepository;
     @Autowired
-    SachRepository sachRepository;
+    BookRepository bookRepository;
     @Autowired
-    PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+    PaymentMethodRepository paymentMethodRepository;
     @Autowired
-    DonHangRepository donHangRepository;
+    OrderRepository orderRepository;
+    @Autowired
+    PaymentRepository paymentRepository;
 
-    Long khId;
-    Long sachId;
+    Long customerId;
+    Long bookId;
 
     @BeforeEach
     void seed() {
-        KhachHang kh = new KhachHang();
-        kh.setTenKhachHang("T");
+        Customer kh = new Customer();
+        kh.setFullName("T");
         kh.setEmail("t@test.com");
-        kh.setSoDienThoai("090");
-        kh.setDiaChi("HCM");
-        khId = khachHangRepository.save(kh).getId();
+        kh.setPhone("090");
+        kh.setAddress("HCM");
+        customerId = customerRepository.save(kh).getId();
 
-        Sach s = new Sach();
-        s.setTenSach("B");
-        s.setGiaBan(100L);
-        s.setGiaNhap(80L);
-        s.setSoLuongTon(10);
-        sachId = sachRepository.save(s).getId();
+        Book b = new Book();
+        b.setTitle("B");
+        b.setSalePrice(100L);
+        b.setCostPrice(80L);
+        b.setStockQuantity(10);
+        bookId = bookRepository.save(b).getId();
 
-        PhuongThucThanhToan pt = new PhuongThucThanhToan();
-        pt.setTenPhuongThuc("ONLINE");
-        phuongThucThanhToanRepository.save(pt);
+        PaymentMethod pm = new PaymentMethod();
+        pm.setCode("ONLINE");
+        paymentMethodRepository.save(pm);
     }
 
     @Test
     void checkout_success_setsPaid_and_decreaseInventory() {
         OrderService.CheckoutResult res = orderService.checkout(
-                khId,
-                List.of(new OrderService.ItemRequest(sachId, 2)),
+                customerId,
+                List.of(new OrderService.ItemRequest(bookId, 2)),
                 new OrderService.ShippingInfo("A", "090", "D"),
+                0L,
                 "ONLINE_OK",
                 "customer"
         );
-        assertThat(res.orderStatus()).isEqualTo(OrderStatus.DA_THANH_TOAN);
-        assertThat(sachRepository.findById(sachId).orElseThrow().getSoLuongTon()).isEqualTo(8);
-        assertThat(donHangRepository.findById(res.orderId()).orElseThrow().getTrangThai()).isEqualTo(OrderStatus.DA_THANH_TOAN);
+        assertThat(res.orderStatus()).isEqualTo(OrderStatus.PAID);
+        assertThat(bookRepository.findById(bookId).orElseThrow().getStockQuantity()).isEqualTo(8);
+        assertThat(orderRepository.findById(res.orderId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);
     }
 }
 

@@ -4,7 +4,7 @@ import com.example.bookstore.domain.enums.OrderStatus;
 
 public record CheckoutResponse(
         Long orderId,
-        OrderStatus orderStatus,
+        OrderStatus status,
         String message
 ) {
 }

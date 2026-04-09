@@ -1,4 +1,0 @@
-ALTER TABLE sach
-  ADD COLUMN gia_ban_ap_dung_tu DATETIME(6) NULL,
-  ADD COLUMN danh_muc VARCHAR(255) NULL;
-

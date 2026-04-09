@@ -3,7 +3,11 @@ package com.example.bookstore.service;
 import com.example.bookstore.domain.entity.*;
 import com.example.bookstore.domain.enums.OrderStatus;
 import com.example.bookstore.domain.enums.PaymentStatus;
-import com.example.bookstore.repository.*;
+import com.example.bookstore.repository.BookRepository;
+import com.example.bookstore.repository.CustomerRepository;
+import com.example.bookstore.repository.OrderRepository;
+import com.example.bookstore.repository.PaymentMethodRepository;
+import com.example.bookstore.repository.PaymentRepository;
 import jakarta.persistence.OptimisticLockException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,172 +21,195 @@ import java.util.Map;
 @Service
 public class OrderService {
 
-    private final DonHangRepository donHangRepository;
-    private final KhachHangRepository khachHangRepository;
-    private final SachRepository sachRepository;
-    private final PhuongThucThanhToanRepository phuongThucThanhToanRepository;
-    private final ThanhToanRepository thanhToanRepository;
+    private final OrderRepository orderRepository;
+    private final CustomerRepository customerRepository;
+    private final BookRepository bookRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
+    private final PaymentRepository paymentRepository;
     private final PaymentGateway paymentGateway;
 
     public OrderService(
-            DonHangRepository donHangRepository,
-            KhachHangRepository khachHangRepository,
-            SachRepository sachRepository,
-            PhuongThucThanhToanRepository phuongThucThanhToanRepository,
-            ThanhToanRepository thanhToanRepository,
+            OrderRepository orderRepository,
+            CustomerRepository customerRepository,
+            BookRepository bookRepository,
+            PaymentMethodRepository paymentMethodRepository,
+            PaymentRepository paymentRepository,
             PaymentGateway paymentGateway
     ) {
-        this.donHangRepository = donHangRepository;
-        this.khachHangRepository = khachHangRepository;
-        this.sachRepository = sachRepository;
-        this.phuongThucThanhToanRepository = phuongThucThanhToanRepository;
-        this.thanhToanRepository = thanhToanRepository;
+        this.orderRepository = orderRepository;
+        this.customerRepository = customerRepository;
+        this.bookRepository = bookRepository;
+        this.paymentMethodRepository = paymentMethodRepository;
+        this.paymentRepository = paymentRepository;
         this.paymentGateway = paymentGateway;
     }
 
     @Transactional
-    public CheckoutResult checkout(
-            Long khachHangId,
+    public CreateOrderResult createPendingOrder(
+            Long customerId,
             List<ItemRequest> items,
             ShippingInfo shippingInfo,
-            String paymentMethodCode,
-            String username
+            Long shippingFee
     ) {
-        KhachHang khachHang = khachHangRepository.findById(khachHangId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng"));
-
-        PhuongThucThanhToan method = phuongThucThanhToanRepository.findAll().stream()
-                .filter(m -> m.getTenPhuongThuc().equalsIgnoreCase(paymentMethodCode) || paymentMethodCode.toUpperCase().startsWith(m.getTenPhuongThuc().toUpperCase()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Phương thức thanh toán không hợp lệ"));
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
         Map<Long, Integer> quantities = new HashMap<>();
         for (ItemRequest item : items) {
-            quantities.merge(item.sachId(), item.soLuong(), Integer::sum);
+            quantities.merge(item.bookId(), item.quantity(), Integer::sum);
         }
 
-        List<Sach> books = sachRepository.findAllById(quantities.keySet());
+        List<Book> books = bookRepository.findAllById(quantities.keySet());
         if (books.size() != quantities.size()) {
-            throw new IllegalArgumentException("Có sách không tồn tại");
+            throw new IllegalArgumentException("Book not found");
         }
 
         // Check inventory and compute total
-        long total = 0L;
-        for (Sach sach : books) {
-            int qty = quantities.get(sach.getId());
-            if (sach.getSoLuongTon() < qty) {
-                throw new IllegalStateException("Không đủ hàng trong kho cho sách: " + sach.getTenSach());
+        long subtotal = 0L;
+        for (Book book : books) {
+            int qty = quantities.get(book.getId());
+            if (book.getStockQuantity() < qty) {
+                throw new IllegalStateException("Insufficient stock for book: " + book.getTitle());
             }
-            total += sach.getGiaBan() * (long) qty;
+            subtotal += book.getSalePrice() * (long) qty;
         }
 
-        DonHang order = new DonHang();
-        order.setKhachHang(khachHang);
-        order.setNgayDat(Instant.now());
-        order.setTongTien(total);
-        order.setTrangThai(OrderStatus.CHO_THANH_TOAN);
+        Order order = new Order();
+        order.setCustomer(customer);
+        order.setOrderedAt(Instant.now());
+        long sf = shippingFee == null ? 0L : shippingFee;
+        if (sf < 0) {
+            throw new IllegalArgumentException("Invalid shipping fee");
+        }
+        order.setShippingFee(sf);
+        order.setTotalAmount(subtotal + sf);
+        order.setStatus(OrderStatus.PENDING_PAYMENT);
 
         // items
-        List<ChiTietDonHang> orderItems = new ArrayList<>();
-        for (Sach sach : books) {
-            int qty = quantities.get(sach.getId());
-            ChiTietDonHang line = new ChiTietDonHang();
-            line.setDonHang(order);
-            line.setSach(sach);
-            line.setSoLuong(qty);
-            line.setGia(sach.getGiaBan());
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (Book book : books) {
+            int qty = quantities.get(book.getId());
+            OrderItem line = new OrderItem();
+            line.setOrder(order);
+            line.setBook(book);
+            line.setQuantity(qty);
+            line.setUnitPrice(book.getSalePrice());
             orderItems.add(line);
         }
-        order.getChiTietDonHangs().addAll(orderItems);
+        order.getItems().addAll(orderItems);
 
         // shipping
-        ThongTinGiaoHang ttgh = new ThongTinGiaoHang();
-        ttgh.setDonHang(order);
-        ttgh.setNguoiNhan(shippingInfo.nguoiNhan());
-        ttgh.setSoDienThoaiNhan(shippingInfo.soDienThoaiNhan());
-        ttgh.setDiaChiGiaoHang(shippingInfo.diaChiGiaoHang());
-        ttgh.setTrangThaiGiaoHang("CHO_XU_LY");
-        order.setThongTinGiaoHang(ttgh);
+        com.example.bookstore.domain.entity.ShippingInfo si = new com.example.bookstore.domain.entity.ShippingInfo();
+        si.setOrder(order);
+        si.setReceiverName(shippingInfo.receiverName());
+        si.setReceiverPhone(shippingInfo.receiverPhone());
+        si.setAddress(shippingInfo.address());
+        si.setShippingStatus("PENDING");
+        order.setShippingInfo(si);
 
-        DonHang saved = donHangRepository.save(order);
-
-        // Create payment PENDING
-        ThanhToan payment = new ThanhToan();
-        payment.setDonHang(saved);
-        payment.setPhuongThucThanhToan(method);
-        payment.setSoTien(total);
-        payment.setTrangThai(PaymentStatus.PENDING);
-        payment.setNgayThanhToan(Instant.now());
-        thanhToanRepository.save(payment);
-
-        // Charge via gateway (mock)
-        PaymentResult result = paymentGateway.charge(new PaymentRequest(saved.getId(), total, paymentMethodCode, username));
-        return handlePaymentResult(saved.getId(), payment.getId(), books, quantities, result);
+        Order saved = orderRepository.save(order);
+        return new CreateOrderResult(saved.getId(), saved.getStatus(), saved.getTotalAmount(), saved.getShippingFee());
     }
 
     @Transactional
-    protected CheckoutResult handlePaymentResult(
-            Long orderId,
-            Long paymentId,
-            List<Sach> books,
-            Map<Long, Integer> quantities,
-            PaymentResult result
-    ) {
-        DonHang order = donHangRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
-        ThanhToan payment = thanhToanRepository.findById(paymentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thanh toán"));
+    public CheckoutResult payOrder(Long orderId, String paymentMethodCode, String username) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Order is not in PENDING_PAYMENT status");
+        }
+
+        PaymentMethod method = paymentMethodRepository.findByCodeIgnoreCase(normalizeMethodCode(paymentMethodCode))
+                .orElseThrow(() -> new IllegalArgumentException("Invalid payment method"));
+
+        // Create payment PENDING
+        Payment payment = new Payment();
+        payment.setOrder(order);
+        payment.setPaymentMethod(method);
+        payment.setAmount(order.getTotalAmount());
+        payment.setStatus(PaymentStatus.PENDING);
+        payment.setPaidAt(Instant.now());
+        paymentRepository.save(payment);
+
+        PaymentResult result = paymentGateway.charge(new PaymentRequest(order.getId(), order.getTotalAmount(), paymentMethodCode, username));
 
         switch (result.status()) {
             case SUCCESS -> {
-                order.setTrangThai(OrderStatus.DA_THANH_TOAN);
-                payment.setTrangThai(PaymentStatus.SUCCESS);
-                payment.setMaGiaoDichDoiTac(result.partnerTransactionId());
+                order.setStatus(OrderStatus.PAID);
+                payment.setStatus(PaymentStatus.SUCCESS);
+                payment.setPartnerTransactionId(result.partnerTransactionId());
 
                 // Decrease inventory
                 try {
-                    for (Sach sach : books) {
-                        int qty = quantities.get(sach.getId());
-                        sach.setSoLuongTon(sach.getSoLuongTon() - qty);
+                    for (OrderItem item : order.getItems()) {
+                        Book book = bookRepository.findById(item.getBook().getId())
+                                .orElseThrow(() -> new IllegalArgumentException("Book not found"));
+                        if (book.getStockQuantity() < item.getQuantity()) {
+                            throw new IllegalStateException("Không đủ hàng trong kho!");
+                        }
+                        book.setStockQuantity(book.getStockQuantity() - item.getQuantity());
+                        bookRepository.save(book);
                     }
-                    sachRepository.saveAll(books);
                 } catch (OptimisticLockException ex) {
-                    throw new IllegalStateException("Tồn kho bị thay đổi đồng thời, vui lòng thử lại");
+                    throw new IllegalStateException("Inventory was modified concurrently, please retry");
                 }
 
-                donHangRepository.save(order);
-                thanhToanRepository.save(payment);
-                return new CheckoutResult(order.getId(), order.getTrangThai(), "Đặt hàng và Thanh toán thành công");
+                orderRepository.save(order);
+                paymentRepository.save(payment);
+                return new CheckoutResult(order.getId(), order.getStatus(), "Đặt hàng và Thanh toán thành công");
             }
             case INSUFFICIENT_FUNDS -> {
-                order.setTrangThai(OrderStatus.CHO_THANH_TOAN);
-                payment.setTrangThai(PaymentStatus.FAILED);
-                donHangRepository.save(order);
-                thanhToanRepository.save(payment);
-                return new CheckoutResult(order.getId(), order.getTrangThai(), "Số dư tài khoản không đủ để thực hiện thanh toán");
+                order.setStatus(OrderStatus.PENDING_PAYMENT);
+                payment.setStatus(PaymentStatus.FAILED);
+                orderRepository.save(order);
+                paymentRepository.save(payment);
+                return new CheckoutResult(order.getId(), order.getStatus(), "Số dư tài khoản không đủ để thực hiện thanh toán");
             }
             case MAINTENANCE -> {
-                order.setTrangThai(OrderStatus.CHO_THANH_TOAN);
-                payment.setTrangThai(PaymentStatus.FAILED);
-                donHangRepository.save(order);
-                thanhToanRepository.save(payment);
-                return new CheckoutResult(order.getId(), order.getTrangThai(), "Hệ thống thanh toán đang bảo trì, vui lòng thử lại sau");
+                order.setStatus(OrderStatus.PENDING_PAYMENT);
+                payment.setStatus(PaymentStatus.FAILED);
+                orderRepository.save(order);
+                paymentRepository.save(payment);
+                return new CheckoutResult(order.getId(), order.getStatus(), "Hệ thống thanh toán đang bảo trì, vui lòng thử lại sau");
             }
             case USER_CANCELLED -> {
-                order.setTrangThai(OrderStatus.CHO_THANH_TOAN);
-                payment.setTrangThai(PaymentStatus.CANCELLED);
-                donHangRepository.save(order);
-                thanhToanRepository.save(payment);
-                return new CheckoutResult(order.getId(), order.getTrangThai(), "Bạn đã hủy đặt hàng");
+                order.setStatus(OrderStatus.PENDING_PAYMENT);
+                payment.setStatus(PaymentStatus.CANCELLED);
+                orderRepository.save(order);
+                paymentRepository.save(payment);
+                return new CheckoutResult(order.getId(), order.getStatus(), "Bạn đã hủy đặt hàng");
             }
         }
         throw new IllegalStateException("Trạng thái thanh toán không hỗ trợ");
     }
 
-    public record ItemRequest(Long sachId, Integer soLuong) {}
+    @Transactional
+    public CheckoutResult checkout(
+            Long customerId,
+            List<ItemRequest> items,
+            ShippingInfo shippingInfo,
+            Long shippingFee,
+            String paymentMethodCode,
+            String username
+    ) {
+        CreateOrderResult created = createPendingOrder(customerId, items, shippingInfo, shippingFee);
+        return payOrder(created.orderId(), paymentMethodCode, username);
+    }
 
-    public record ShippingInfo(String nguoiNhan, String soDienThoaiNhan, String diaChiGiaoHang) {}
+    public record ItemRequest(Long bookId, Integer quantity) {}
+
+    public record ShippingInfo(String receiverName, String receiverPhone, String address) {}
 
     public record CheckoutResult(Long orderId, OrderStatus orderStatus, String message) {}
+
+    public record CreateOrderResult(Long orderId, OrderStatus orderStatus, Long totalAmount, Long shippingFee) {}
+
+    private String normalizeMethodCode(String paymentMethodCode) {
+        if (paymentMethodCode == null) return "";
+        String upper = paymentMethodCode.toUpperCase();
+        int idx = upper.indexOf('_');
+        return idx > 0 ? upper.substring(0, idx) : upper;
+    }
 }
 

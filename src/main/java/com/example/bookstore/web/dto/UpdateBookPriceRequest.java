@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 
 public record UpdateBookPriceRequest(
-        @NotNull @Min(1) Long giaBanMoi,
-        Instant thoiGianApDung,
-        boolean chapNhanBanLo
+        @NotNull @Min(1) Long newSalePrice,
+        Instant effectiveFrom,
+        boolean allowLossSale
 ) {
 }
 

@@ -8,16 +8,17 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record CheckoutRequest(
-        @NotNull Long khachHangId,
+        @NotNull Long customerId,
         @NotEmpty List<Item> items,
-        @NotBlank String nguoiNhan,
-        @NotBlank String soDienThoaiNhan,
-        @NotBlank String diaChiGiaoHang,
+        @NotBlank String receiverName,
+        @NotBlank String receiverPhone,
+        @NotBlank String shippingAddress,
+        @NotNull @Min(0) Long shippingFee,
         @NotBlank String paymentMethodCode
 ) {
     public record Item(
-            @NotNull Long sachId,
-            @NotNull @Min(1) Integer soLuong
+            @NotNull Long bookId,
+            @NotNull @Min(1) Integer quantity
     ) {
     }
 }

@@ -1,7 +1,7 @@
 package com.example.bookstore.service;
 
-import com.example.bookstore.domain.entity.Sach;
-import com.example.bookstore.repository.SachRepository;
+import com.example.bookstore.domain.entity.Book;
+import com.example.bookstore.repository.BookRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,41 +10,41 @@ import java.time.Instant;
 @Service
 public class PricingService {
 
-    private final SachRepository sachRepository;
+    private final BookRepository bookRepository;
 
-    public PricingService(SachRepository sachRepository) {
-        this.sachRepository = sachRepository;
+    public PricingService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
     }
 
     @Transactional
-    public PricingResult updatePrice(Long sachId, Long giaBanMoi, Instant thoiGianApDung, boolean chapNhanBanLo) {
-        Sach sach = sachRepository.findById(sachId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách"));
+    public PricingResult updatePrice(Long bookId, Long newSalePrice, Instant effectiveFrom, boolean allowLossSale) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found"));
 
-        if (giaBanMoi <= 0) {
-            throw new IllegalArgumentException("Giá bán không hợp lệ");
+        if (newSalePrice <= 0) {
+            throw new IllegalArgumentException("Invalid sale price");
         }
 
-        if (giaBanMoi < sach.getGiaNhap() && !chapNhanBanLo) {
+        if (newSalePrice < book.getCostPrice() && !allowLossSale) {
             return new PricingResult(false,
                     "Giá bán hiện tại đang thấp hơn giá vốn. Bạn có chắc chắn muốn tiếp tục?",
-                    sach.getGiaNhap(),
-                    sach.getGiaBan(),
-                    giaBanMoi);
+                    book.getCostPrice(),
+                    book.getSalePrice(),
+                    newSalePrice);
         }
 
-        sach.setGiaBan(giaBanMoi);
-        sach.setGiaBanApDungTu(thoiGianApDung == null ? Instant.now() : thoiGianApDung);
-        sachRepository.save(sach);
-        return new PricingResult(true, "Cập nhật giá bán thành công", sach.getGiaNhap(), sach.getGiaBan(), giaBanMoi);
+        book.setSalePrice(newSalePrice);
+        book.setSalePriceEffectiveFrom(effectiveFrom == null ? Instant.now() : effectiveFrom);
+        bookRepository.save(book);
+        return new PricingResult(true, "Cập nhật giá bán thành công", book.getCostPrice(), book.getSalePrice(), newSalePrice);
     }
 
     public record PricingResult(
             boolean updated,
             String message,
-            Long giaNhap,
-            Long giaBanCu,
-            Long giaBanMoi
+            Long costPrice,
+            Long oldSalePrice,
+            Long newSalePrice
     ) {
     }
 }

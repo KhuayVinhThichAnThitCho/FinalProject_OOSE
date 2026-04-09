@@ -1,9 +1,9 @@
 package com.example.bookstore.service;
 
-import com.example.bookstore.domain.entity.ChiTietDonHang;
-import com.example.bookstore.domain.entity.DonHang;
+import com.example.bookstore.domain.entity.Order;
+import com.example.bookstore.domain.entity.OrderItem;
 import com.example.bookstore.domain.enums.OrderStatus;
-import com.example.bookstore.repository.DonHangRepository;
+import com.example.bookstore.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -24,59 +24,59 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 @Service
 public class ReportService {
 
-    private final DonHangRepository donHangRepository;
+    private final OrderRepository orderRepository;
 
-    public ReportService(DonHangRepository donHangRepository) {
-        this.donHangRepository = donHangRepository;
+    public ReportService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
     }
 
     public SalesReportData buildSalesReport(Instant from, Instant to, String category, String status) {
         validateRange(from, to);
 
-        List<DonHang> orders = donHangRepository.findByNgayDatBetween(from, to).stream()
+        List<Order> orders = orderRepository.findByOrderedAtBetween(from, to).stream()
                 .filter(o -> {
                     if (status == null || status.isBlank()) {
-                        return o.getTrangThai() == OrderStatus.DA_THANH_TOAN;
+                        return o.getStatus() == OrderStatus.PAID;
                     }
-                    return o.getTrangThai().name().equalsIgnoreCase(status);
+                    return o.getStatus().name().equalsIgnoreCase(status);
                 })
                 .filter(o -> {
                     if (category == null || category.isBlank()) {
                         return true;
                     }
-                    return o.getChiTietDonHangs().stream()
-                            .anyMatch(i -> category.equalsIgnoreCase(i.getSach().getDanhMuc()));
+                    return o.getItems().stream()
+                            .anyMatch(i -> category.equalsIgnoreCase(i.getBook().getCategory()));
                 })
                 .toList();
 
         long totalOrders = orders.size();
-        long totalRevenue = orders.stream().mapToLong(DonHang::getTongTien).sum();
+        long totalRevenue = orders.stream().mapToLong(Order::getTotalAmount).sum();
 
         // Compare to previous period (same length)
         Duration period = Duration.between(from, to);
         Instant prevTo = from;
         Instant prevFrom = from.minus(period);
-        long prevRevenue = donHangRepository.findByNgayDatBetween(prevFrom, prevTo).stream()
-                .filter(o -> o.getTrangThai() == OrderStatus.DA_THANH_TOAN)
-                .mapToLong(DonHang::getTongTien)
+        long prevRevenue = orderRepository.findByOrderedAtBetween(prevFrom, prevTo).stream()
+                .filter(o -> o.getStatus() == OrderStatus.PAID)
+                .mapToLong(Order::getTotalAmount)
                 .sum();
         Double growthPercent = prevRevenue == 0 ? null : ((totalRevenue - prevRevenue) * 100.0) / prevRevenue;
 
         Map<Long, BookAgg> bookAgg = orders.stream()
-                .flatMap(o -> o.getChiTietDonHangs().stream())
-                .filter(i -> category == null || category.isBlank() || category.equalsIgnoreCase(i.getSach().getDanhMuc()))
+                .flatMap(o -> o.getItems().stream())
+                .filter(i -> category == null || category.isBlank() || category.equalsIgnoreCase(i.getBook().getCategory()))
                 .collect(Collectors.groupingBy(
-                        i -> i.getSach().getId(),
+                        i -> i.getBook().getId(),
                         Collectors.collectingAndThen(Collectors.toList(), list -> {
-                            ChiTietDonHang first = list.get(0);
-                            long qty = list.stream().mapToLong(ChiTietDonHang::getSoLuong).sum();
-                            return new BookAgg(first.getSach().getId(), first.getSach().getTenSach(), first.getSach().getDanhMuc(), qty);
+                            OrderItem first = list.get(0);
+                            long qty = list.stream().mapToLong(OrderItem::getQuantity).sum();
+                            return new BookAgg(first.getBook().getId(), first.getBook().getTitle(), first.getBook().getCategory(), qty);
                         })
                 ));
 
-        long totalBooksSold = bookAgg.values().stream().mapToLong(BookAgg::soLuongBan).sum();
+        long totalBooksSold = bookAgg.values().stream().mapToLong(BookAgg::quantitySold).sum();
         List<BookAgg> topBooks = bookAgg.values().stream()
-                .sorted(Comparator.comparingLong(BookAgg::soLuongBan).reversed())
+                .sorted(Comparator.comparingLong(BookAgg::quantitySold).reversed())
                 .limit(10)
                 .toList();
 
@@ -124,10 +124,10 @@ public class ReportService {
 
             for (BookAgg b : data.topBooks()) {
                 Row row = s.createRow(r++);
-                row.createCell(0).setCellValue(b.sachId());
-                row.createCell(1).setCellValue(b.tenSach());
-                row.createCell(2).setCellValue(b.danhMuc() == null ? "" : b.danhMuc());
-                row.createCell(3).setCellValue(b.soLuongBan());
+                row.createCell(0).setCellValue(b.bookId());
+                row.createCell(1).setCellValue(b.title());
+                row.createCell(2).setCellValue(b.category() == null ? "" : b.category());
+                row.createCell(3).setCellValue(b.quantitySold());
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -157,7 +157,7 @@ public class ReportService {
             }
             doc.add(new Paragraph("Top books:"));
             for (BookAgg b : data.topBooks()) {
-                doc.add(new Paragraph("- " + b.tenSach() + " (" + b.sachId() + "): " + b.soLuongBan()));
+                doc.add(new Paragraph("- " + b.title() + " (" + b.bookId() + "): " + b.quantitySold()));
             }
             doc.close();
             return out.toByteArray();
@@ -190,7 +190,7 @@ public class ReportService {
     ) {
     }
 
-    public record BookAgg(Long sachId, String tenSach, String danhMuc, long soLuongBan) {
+    public record BookAgg(Long bookId, String title, String category, long quantitySold) {
     }
 }
 

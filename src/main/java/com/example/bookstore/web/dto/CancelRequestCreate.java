@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CancelRequestCreate(
-        @NotNull Long donHangId,
-        @NotBlank String lyDoHuy
+        @NotNull Long orderId,
+        @NotBlank String reason
 ) {
 }
 
