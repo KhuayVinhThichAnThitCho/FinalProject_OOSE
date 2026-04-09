@@ -234,13 +234,13 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
         if (o.getStatus() != OrderStatus.PAID) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái PAID để xác nhận");
+            throw new IllegalStateException("Đơn hàng đã được xác nhận");
         }
 
         for (OrderItem item : o.getItems()) {
             Book book = bookRepository.findById(item.getBook().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Book not found"));
-            if (book.getStockQuantity() < 0) {
+            if (book.getStockQuantity() < item.getQuantity()) {
                 throw new IllegalStateException("Không đủ hàng trong kho!");
             }
         }

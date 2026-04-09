@@ -1,8 +1,11 @@
 package com.example.bookstore.web.rest;
 
+import com.example.bookstore.domain.entity.Order;
 import com.example.bookstore.domain.enums.OrderStatus;
 import com.example.bookstore.repository.OrderRepository;
 import com.example.bookstore.service.OrderService;
+import com.example.bookstore.web.dto.OrderDetailResponse;
+import com.example.bookstore.web.dto.OrderItemDto;
 import com.example.bookstore.web.dto.OrderSummaryResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +32,38 @@ public class StaffOrderController {
                 .toList();
     }
 
+    @GetMapping("/{id}")
+    public OrderDetailResponse viewOrderDetail(@PathVariable("id") Long orderId) {
+        Order o = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin đơn hàng."));
+
+        List<OrderItemDto> items = o.getOrderDetails().stream()
+                .map(i -> new OrderItemDto(
+                        i.getBookInfo().getId(),
+                        i.getBookInfo().getTitle(),
+                        i.getQuantity(),
+                        i.getUnitPrice()
+                ))
+                .toList();
+
+        OrderDetailResponse.ShippingInfo shipping = o.getShippingInfo() == null ? null :
+                new OrderDetailResponse.ShippingInfo(
+                        o.getShippingInfo().getAddress(),
+                        o.getShippingInfo().getReceiverName(),
+                        o.getShippingInfo().getReceiverPhone(),
+                        o.getShippingInfo().getShippingStatus()
+                );
+
+        return new OrderDetailResponse(
+                o.getId(),
+                o.getOrderedAt(),
+                o.getTotalAmount(),
+                o.getStatus(),
+                shipping,
+                items
+        );
+    }
+
     @PostMapping("/{id}/confirm")
     public String confirmOrder(@PathVariable("id") Long orderId) {
         return orderService.startShipping(orderId).message();
@@ -38,8 +73,8 @@ public class StaffOrderController {
     public String cancelProcessing(@PathVariable("id") Long orderId) {
         orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        // Keep status unchanged by spec.
-        return "Đã hủy xử lý đơn hàng!";
+
+        return "Đã hủy xác nhận đơn hàng!";
     }
 }
 
