@@ -10,7 +10,7 @@ import com.example.bookstore.web.dto.CheckoutResponse;
 import com.example.bookstore.web.dto.ConfirmOrderRequest;
 import com.example.bookstore.web.dto.CreateOrderResponse;
 import com.example.bookstore.web.dto.MakeNewOrderRequest;
-import com.example.bookstore.web.dto.OrderDetailResponse;
+import com.example.bookstore.web.dto.OrderDetail;
 import com.example.bookstore.web.dto.OrderItemDto;
 import com.example.bookstore.web.dto.OrderListResponse;
 import com.example.bookstore.web.dto.OrderSummaryResponse;
@@ -157,7 +157,7 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public OrderDetailResponse viewOrderDetail(
+    public OrderDetail viewOrderDetail(
             @PathVariable("id") Long orderId,
             @RequestParam("customerId") Long customerId
     ) {
@@ -173,15 +173,15 @@ public class OrderController {
                 ))
                 .toList();
 
-        OrderDetailResponse.ShippingInfo shipping = o.getShippingInfo() == null ? null :
-                new OrderDetailResponse.ShippingInfo(
+        OrderDetail.ShippingInfo shipping = o.getShippingInfo() == null ? null :
+                new OrderDetail.ShippingInfo(
                         o.getShippingInfo().getAddress(),
                         o.getShippingInfo().getReceiverName(),
                         o.getShippingInfo().getReceiverPhone(),
                         o.getShippingInfo().getShippingStatus()
                 );
 
-        return new OrderDetailResponse(
+        return new OrderDetail(
                 o.getId(),
                 o.getOrderedAt(),
                 o.getTotalAmount(),

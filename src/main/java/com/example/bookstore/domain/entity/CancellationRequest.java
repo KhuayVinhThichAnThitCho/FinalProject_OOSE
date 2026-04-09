@@ -36,6 +36,10 @@ public class CancellationRequest extends AuditableEntity {
         return order;
     }
 
+    public CancellationRequest getCancelRequest() {
+        return this;
+    }
+
     public void setOrder(Order order) {
         this.order = order;
     }

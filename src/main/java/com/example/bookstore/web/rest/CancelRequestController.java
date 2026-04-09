@@ -2,9 +2,13 @@ package com.example.bookstore.web.rest;
 
 import com.example.bookstore.domain.entity.CancellationRequest;
 import com.example.bookstore.domain.enums.CancelRequestStatus;
+import com.example.bookstore.domain.entity.Order;
 import com.example.bookstore.service.CancelRequestService;
 import com.example.bookstore.repository.CancellationRequestRepository;
 import com.example.bookstore.web.dto.CancelRequestCreate;
+import com.example.bookstore.web.dto.CancelRequestDetailResponse;
+import com.example.bookstore.web.dto.OrderDetail;
+import com.example.bookstore.web.dto.OrderItemDto;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,23 +36,64 @@ public class CancelRequestController {
 
     @GetMapping("/staff")
     @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
-    public List<CancellationRequest> listForStaff(@RequestParam(value = "status", required = false) CancelRequestStatus status) {
+    public List<CancellationRequest> viewCancelRequest(@RequestParam(value = "status", required = false) CancelRequestStatus status) {
         if (status == null) {
             return cancellationRequestRepository.findAll();
         }
         return cancellationRequestRepository.findByStatus(status);
     }
 
+    @GetMapping("/staff/{id}")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
+    public CancelRequestDetailResponse getCancelRequest(@PathVariable("id") Long id) {
+        CancellationRequest req = cancelRequestService.viewCancelRequest(id).getCancelRequest();
+        Order o = req.getOrder();
+
+        List<OrderItemDto> items = o.getOrderDetails().stream()
+                .map(i -> new OrderItemDto(
+                        i.getBookInfo().getId(),
+                        i.getBookInfo().getTitle(),
+                        i.getQuantity(),
+                        i.getUnitPrice()
+                ))
+                .toList();
+
+        OrderDetail.ShippingInfo shipping = o.getShippingInfo() == null ? null :
+                new OrderDetail.ShippingInfo(
+                        o.getShippingInfo().getAddress(),
+                        o.getShippingInfo().getReceiverName(),
+                        o.getShippingInfo().getReceiverPhone(),
+                        o.getShippingInfo().getShippingStatus()
+                );
+
+        OrderDetail orderDetail = new OrderDetail(
+                o.getId(),
+                o.getOrderedAt(),
+                o.getTotalAmount(),
+                o.getOrderStatus(),
+                shipping,
+                items
+        );
+
+        return new CancelRequestDetailResponse(
+                req.getId(),
+                req.getStatus(),
+                req.getReason(),
+                req.getRequestedAt(),
+                orderDetail
+        );
+    }
+
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
-    public String approve(@PathVariable("id") Long id) {
-        return cancelRequestService.approve(id);
+    public String confirmCancelRequest(@PathVariable("id") Long id) {
+        return cancelRequestService.confirmCancelRequest(id);
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
-    public String reject(@PathVariable("id") Long id) {
-        return cancelRequestService.reject(id);
+    public String rejectCancelRequest(@PathVariable("id") Long id) {
+        return cancelRequestService.rejectCancelRequest(id);
     }
 }
 

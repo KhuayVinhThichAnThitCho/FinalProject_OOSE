@@ -107,11 +107,18 @@ public class Order extends AuditableEntity {
         this.status = status;
     }
 
+    public OrderStatus getOrderStatus() {
+        return status;
+    }
+
+    public void updateStatus(OrderStatus status) {
+        this.status = status;
+    }
+
     public List<OrderItem> getItems() {
         return items;
     }
 
-    // Named like in sequence diagram
     public List<OrderItem> getOrderDetails() {
         return items;
     }

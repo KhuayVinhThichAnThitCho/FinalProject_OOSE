@@ -56,12 +56,25 @@ public class CancelRequestService {
         CancellationRequest req = cancellationRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
 
-        Order order = req.getOrder();
-        if (order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.DELIVERED) {
-            throw new IllegalStateException("Cannot cancel this order");
+        if (req.getStatus() != CancelRequestStatus.PENDING) {
+            throw new IllegalStateException("Yêu cầu hủy đã được xử lý trước đó");
         }
-        order.setStatus(OrderStatus.CANCELLED);
+
+        Order order = req.getOrder();
+        if (order.getOrderedAt() != null) {
+            Duration age = Duration.between(order.getOrderedAt(), Instant.now());
+            if (age.toHours() > 24) {
+                throw new IllegalStateException("Đã quá thời gian cho phép hủy đơn");
+            }
+        }
+        if (order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Không thể hủy đơn hàng này");
+        }
+
+        order.updateStatus(OrderStatus.CANCELLED);
         req.setStatus(CancelRequestStatus.APPROVED);
+        orderRepository.save(order);
+        cancellationRequestRepository.save(req);
 
         return "Hủy đơn hàng thành công";
     }
@@ -70,8 +83,30 @@ public class CancelRequestService {
     public String reject(Long requestId) {
         CancellationRequest req = cancellationRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
+        if (req.getStatus() != CancelRequestStatus.PENDING) {
+            throw new IllegalStateException("Yêu cầu hủy đã được xử lý trước đó");
+        }
         req.setStatus(CancelRequestStatus.REJECTED);
+        cancellationRequestRepository.save(req);
         return "Yêu cầu hủy đã bị từ chối";
+    }
+
+    // ---- Methods named exactly like sequence diagrams ----
+
+    @Transactional(readOnly = true)
+    public CancellationRequest viewCancelRequest(Long cancelId) {
+        return cancellationRequestRepository.findById(cancelId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy yêu cầu hủy"));
+    }
+
+    @Transactional
+    public String confirmCancelRequest(Long cancelId) {
+        return approve(cancelId);
+    }
+
+    @Transactional
+    public String rejectCancelRequest(Long cancelId) {
+        return reject(cancelId);
     }
 }
 

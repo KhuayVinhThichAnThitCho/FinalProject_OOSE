@@ -37,6 +37,7 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\Payment
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\PricingService.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\ReportService.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CancelRequestCreate.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CancelRequestDetailResponse.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CheckoutOrderRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CheckoutRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CheckoutResponse.java
@@ -48,6 +49,7 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\LoginRe
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\MakeNewOrderRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\MockAuthorizePaymentRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\MockAuthorizePaymentResponse.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderDetail.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderDetailResponse.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderItemDto.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderListResponse.java
