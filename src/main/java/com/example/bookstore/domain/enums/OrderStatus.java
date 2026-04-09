@@ -1,7 +1,7 @@
 package com.example.bookstore.domain.enums;
 
 public enum OrderStatus {
-    PENDING_PAYMENT,
+    PENDING,
     PAID,
     PROCESSING,
     SHIPPING,

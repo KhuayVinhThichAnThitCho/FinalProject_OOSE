@@ -46,11 +46,11 @@ public class Book extends AuditableEntity {
         this.title = title;
     }
 
-    public Long getSalePrice() {
+    public Long getPrice() {
         return salePrice;
     }
 
-    public void setSalePrice(Long salePrice) {
+    public void setPrice(Long salePrice) {
         this.salePrice = salePrice;
     }
 

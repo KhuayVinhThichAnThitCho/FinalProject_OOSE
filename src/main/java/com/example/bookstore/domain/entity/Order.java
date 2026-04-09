@@ -12,7 +12,6 @@ import java.util.List;
 public class Order extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
@@ -28,7 +27,7 @@ public class Order extends AuditableEntity {
     private Instant orderedAt;
 
     @Column(name = "total_amount", nullable = false)
-    private Long totalAmount;
+    private Long totalAmount = 0L;
 
     @Column(name = "shipping_fee", nullable = false)
     private Long shippingFee = 0L;
@@ -56,6 +55,10 @@ public class Order extends AuditableEntity {
         return id;
     }
 
+    public void setOrderId(Long id) {
+        this.id = id;
+    }
+
     public Customer getCustomer() {
         return customer;
     }
@@ -76,7 +79,7 @@ public class Order extends AuditableEntity {
         return orderedAt;
     }
 
-    public void setOrderedAt(Instant orderedAt) {
+    public void setOrderDate(Instant orderedAt) {
         this.orderedAt = orderedAt;
     }
 

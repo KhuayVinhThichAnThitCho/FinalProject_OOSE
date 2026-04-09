@@ -20,7 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Import({OrderService.class, MockPaymentGateway.class})
+@Import({OrderService.class, MockPaymentGateway.class, MockPaymentOutcomeStore.class})
 class OrderServiceTest {
 
     @Autowired
@@ -50,7 +50,7 @@ class OrderServiceTest {
 
         Book b = new Book();
         b.setTitle("B");
-        b.setSalePrice(100L);
+        b.setPrice(100L);
         b.setCostPrice(80L);
         b.setStockQuantity(10);
         bookId = bookRepository.save(b).getId();
@@ -62,14 +62,15 @@ class OrderServiceTest {
 
     @Test
     void checkout_success_setsPaid_and_decreaseInventory() {
-        OrderService.CheckoutResult res = orderService.checkout(
-                customerId,
+        Long orderId = orderService.makeNewOrder(customerId).orderId();
+        orderService.confirmOrder(
+                orderId,
                 List.of(new OrderService.ItemRequest(bookId, 2)),
                 new OrderService.ShippingInfo("A", "090", "D"),
-                0L,
-                "ONLINE_OK",
-                "customer"
+                0L
         );
+
+        OrderService.CheckoutResult res = orderService.checkout(orderId, "ONLINE_OK", "customer");
         assertThat(res.orderStatus()).isEqualTo(OrderStatus.PAID);
         assertThat(bookRepository.findById(bookId).orElseThrow().getStockQuantity()).isEqualTo(8);
         assertThat(orderRepository.findById(res.orderId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);

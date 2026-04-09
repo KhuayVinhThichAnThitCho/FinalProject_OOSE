@@ -29,14 +29,14 @@ public class PricingService {
             return new PricingResult(false,
                     "Giá bán hiện tại đang thấp hơn giá vốn. Bạn có chắc chắn muốn tiếp tục?",
                     book.getCostPrice(),
-                    book.getSalePrice(),
+                    book.getPrice(),
                     newSalePrice);
         }
 
-        book.setSalePrice(newSalePrice);
+        book.setPrice(newSalePrice);
         book.setSalePriceEffectiveFrom(effectiveFrom == null ? Instant.now() : effectiveFrom);
         bookRepository.save(book);
-        return new PricingResult(true, "Cập nhật giá bán thành công", book.getCostPrice(), book.getSalePrice(), newSalePrice);
+        return new PricingResult(true, "Cập nhật giá bán thành công", book.getCostPrice(), book.getPrice(), newSalePrice);
     }
 
     public record PricingResult(

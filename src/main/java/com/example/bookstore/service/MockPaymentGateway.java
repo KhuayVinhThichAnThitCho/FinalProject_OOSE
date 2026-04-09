@@ -7,25 +7,27 @@ import java.util.UUID;
 @Component
 public class MockPaymentGateway implements PaymentGateway {
 
+    private final MockPaymentOutcomeStore outcomeStore;
+
+    public MockPaymentGateway(MockPaymentOutcomeStore outcomeStore) {
+        this.outcomeStore = outcomeStore;
+    }
+
     @Override
-    public PaymentResult charge(PaymentRequest request) {
-        // For demo: decide by methodCode suffix:
-        // - ONLINE_OK -> success
-        // - ONLINE_NO_MONEY -> insufficient funds
-        // - ONLINE_MAINT -> maintenance
-        // - ONLINE_CANCEL -> user cancelled
-        // Otherwise: success
-        String code = request.methodCode() == null ? "" : request.methodCode().toUpperCase();
-        if (code.endsWith("_NO_MONEY")) {
-            return new PaymentResult(PaymentResultStatus.INSUFFICIENT_FUNDS, null, "Số dư không đủ");
+    public PaymentResult processPayment(PaymentRequest request) {
+        // Demo/mock gateway: outcome is set by /api/payment/mock/authorize (per-order),
+        // fallback to SUCCESS when not specified.
+        PaymentResultStatus decided = outcomeStore.consumeOutcome(request.orderId());
+        if (decided == null) {
+            decided = PaymentResultStatus.SUCCESS;
         }
-        if (code.endsWith("_MAINT")) {
-            return new PaymentResult(PaymentResultStatus.MAINTENANCE, null, "Cổng thanh toán đang bảo trì");
-        }
-        if (code.endsWith("_CANCEL")) {
-            return new PaymentResult(PaymentResultStatus.USER_CANCELLED, null, "Người dùng hủy thanh toán");
-        }
-        return new PaymentResult(PaymentResultStatus.SUCCESS, "MOCK-" + UUID.randomUUID(), "Thanh toán thành công");
+
+        return switch (decided) {
+            case SUCCESS -> new PaymentResult(PaymentResultStatus.SUCCESS, "MOCK-" + UUID.randomUUID(), "Thanh toán thành công");
+            case INSUFFICIENT_FUNDS -> new PaymentResult(PaymentResultStatus.INSUFFICIENT_FUNDS, null, "Số dư không đủ");
+            case MAINTENANCE -> new PaymentResult(PaymentResultStatus.MAINTENANCE, null, "Cổng thanh toán đang bảo trì");
+            case USER_CANCELLED -> new PaymentResult(PaymentResultStatus.USER_CANCELLED, null, "Người dùng hủy thanh toán");
+        };
     }
 }
 

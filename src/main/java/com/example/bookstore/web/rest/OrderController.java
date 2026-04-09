@@ -5,15 +5,15 @@ import com.example.bookstore.domain.entity.UserAccount;
 import com.example.bookstore.repository.OrderRepository;
 import com.example.bookstore.repository.UserAccountRepository;
 import com.example.bookstore.service.OrderService;
-import com.example.bookstore.web.dto.CheckoutRequest;
+import com.example.bookstore.web.dto.CheckoutOrderRequest;
 import com.example.bookstore.web.dto.CheckoutResponse;
-import com.example.bookstore.web.dto.CreateOrderRequest;
+import com.example.bookstore.web.dto.ConfirmOrderRequest;
 import com.example.bookstore.web.dto.CreateOrderResponse;
+import com.example.bookstore.web.dto.MakeNewOrderRequest;
 import com.example.bookstore.web.dto.OrderDetailResponse;
 import com.example.bookstore.web.dto.OrderItemDto;
 import com.example.bookstore.web.dto.OrderListResponse;
 import com.example.bookstore.web.dto.OrderSummaryResponse;
-import com.example.bookstore.web.dto.PayOrderRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -37,23 +37,8 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public CreateOrderResponse createPendingOrder(@Valid @RequestBody CreateOrderRequest request) {
-        List<OrderService.ItemRequest> items = request.items().stream()
-                .map(i -> new OrderService.ItemRequest(i.bookId(), i.quantity()))
-                .toList();
-
-        OrderService.ShippingInfo shippingInfo = new OrderService.ShippingInfo(
-                request.receiverName(),
-                request.receiverPhone(),
-                request.shippingAddress()
-        );
-
-        OrderService.CreateOrderResult created = orderService.createPendingOrder(
-                request.customerId(),
-                items,
-                shippingInfo,
-                request.shippingFee()
-        );
+    public CreateOrderResponse makeNewOrder(@Valid @RequestBody MakeNewOrderRequest request) {
+        OrderService.CreateOrderResult created = orderService.makeNewOrder(request.customerId());
 
         Order o = orderRepository.findById(created.orderId()).orElseThrow();
         List<OrderItemDto> itemDtos = o.getItems().stream()
@@ -79,19 +64,17 @@ public class OrderController {
         );
     }
 
-    @PostMapping("/{id}/pay")
+    @PostMapping("/{id}/checkout")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public CheckoutResponse pay(@PathVariable("id") Long orderId, @Valid @RequestBody PayOrderRequest req, Authentication authentication) {
+    public CheckoutResponse checkout(@PathVariable("id") Long orderId, @Valid @RequestBody CheckoutOrderRequest req, Authentication authentication) {
         String username = authentication == null ? "anonymous" : authentication.getName();
-        OrderService.CheckoutResult result = orderService.payOrder(orderId, req.paymentMethodCode(), username);
+        OrderService.CheckoutResult result = orderService.checkout(orderId, req.paymentMethodCode(), username);
         return new CheckoutResponse(result.orderId(), result.orderStatus(), result.message());
     }
 
-    @PostMapping("/checkout")
+    @PostMapping("/{id}/confirm")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public CheckoutResponse checkout(@Valid @RequestBody CheckoutRequest request, Authentication authentication) {
-        String username = authentication == null ? "anonymous" : authentication.getName();
-
+    public CreateOrderResponse confirmOrder(@PathVariable("id") Long orderId, @Valid @RequestBody ConfirmOrderRequest request) {
         List<OrderService.ItemRequest> items = request.items().stream()
                 .map(i -> new OrderService.ItemRequest(i.bookId(), i.quantity()))
                 .toList();
@@ -102,14 +85,41 @@ public class OrderController {
                 request.shippingAddress()
         );
 
-        OrderService.CheckoutResult result = orderService.checkout(
-                request.customerId(),
+        OrderService.CreateOrderResult created = orderService.confirmOrder(
+                orderId,
                 items,
                 shippingInfo,
-                request.shippingFee(),
-                request.paymentMethodCode(),
-                username
+                request.shippingFee()
         );
+
+        Order o = orderRepository.findById(created.orderId()).orElseThrow();
+        List<OrderItemDto> itemDtos = o.getItems().stream()
+                .map(i -> new OrderItemDto(i.getBook().getId(), i.getBook().getTitle(), i.getQuantity(), i.getUnitPrice()))
+                .toList();
+
+        CreateOrderResponse.ShippingInfo ship = o.getShippingInfo() == null ? null :
+                new CreateOrderResponse.ShippingInfo(
+                        o.getShippingInfo().getAddress(),
+                        o.getShippingInfo().getReceiverName(),
+                        o.getShippingInfo().getReceiverPhone(),
+                        o.getShippingInfo().getShippingStatus()
+                );      
+
+        return new CreateOrderResponse(
+                o.getId(),
+                o.getOrderedAt(),
+                o.getShippingFee(),
+                o.getTotalAmount(),
+                o.getStatus(),
+                ship,
+                itemDtos
+        );
+    }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public CheckoutResponse cancel(@PathVariable("id") Long orderId, @RequestParam("customerId") Long customerId) {
+        OrderService.CheckoutResult result = orderService.cancel(orderId, customerId);
         return new CheckoutResponse(result.orderId(), result.orderStatus(), result.message());
     }
 
