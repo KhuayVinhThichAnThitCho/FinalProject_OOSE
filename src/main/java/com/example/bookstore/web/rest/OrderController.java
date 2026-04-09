@@ -125,15 +125,15 @@ public class OrderController {
 
     @GetMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public List<OrderSummaryResponse> listByCustomer(@RequestParam("customerId") Long customerId) {
-        return orderRepository.findByCustomerIdOrderByOrderedAtDesc(customerId).stream()
+    public List<OrderSummaryResponse> viewOrders(@RequestParam("customerId") Long customerId) {
+        return orderRepository.findOrdersByCustomer(customerId).stream()
                 .map(o -> new OrderSummaryResponse(o.getId(), o.getOrderedAt(), o.getTotalAmount(), o.getStatus()))
                 .toList();
     }
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public OrderListResponse listMyOrders(Authentication authentication) {
+    public OrderListResponse viewOrders(Authentication authentication) {
         String username = authentication == null ? null : authentication.getName();
         if (username == null || username.isBlank()) {
             throw new IllegalStateException("Unauthenticated");
@@ -146,7 +146,7 @@ public class OrderController {
         }
 
         Long customerId = account.getCustomer().getId();
-        List<OrderSummaryResponse> orders = orderRepository.findByCustomerIdOrderByOrderedAtDesc(customerId).stream()
+        List<OrderSummaryResponse> orders = orderRepository.findOrdersByCustomer(customerId).stream()
                 .map(o -> new OrderSummaryResponse(o.getId(), o.getOrderedAt(), o.getTotalAmount(), o.getStatus()))
                 .toList();
         if (orders.isEmpty()) {
@@ -157,17 +157,17 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public OrderDetailResponse getDetail(
+    public OrderDetailResponse viewOrderDetail(
             @PathVariable("id") Long orderId,
             @RequestParam("customerId") Long customerId
     ) {
-        Order o = orderRepository.findByIdAndCustomerId(orderId, customerId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        Order o = orderRepository.findOrder(orderId, customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin đơn hàng."));
 
-        List<OrderItemDto> items = o.getItems().stream()
+        List<OrderItemDto> items = o.getOrderDetails().stream()
                 .map(i -> new OrderItemDto(
-                        i.getBook().getId(),
-                        i.getBook().getTitle(),
+                        i.getBookInfo().getId(),
+                        i.getBookInfo().getTitle(),
                         i.getQuantity(),
                         i.getUnitPrice()
                 ))

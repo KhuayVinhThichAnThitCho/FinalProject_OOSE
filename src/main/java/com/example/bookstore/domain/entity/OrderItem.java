@@ -41,6 +41,11 @@ public class OrderItem extends AuditableEntity {
         return book;
     }
 
+    // Named like in sequence diagram
+    public Book getBookInfo() {
+        return book;
+    }
+
     public void setBook(Book book) {
         this.book = book;
     }

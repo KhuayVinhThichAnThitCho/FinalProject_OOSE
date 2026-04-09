@@ -111,6 +111,11 @@ public class Order extends AuditableEntity {
         return items;
     }
 
+    // Named like in sequence diagram
+    public List<OrderItem> getOrderDetails() {
+        return items;
+    }
+
     public List<Payment> getPayments() {
         return payments;
     }
