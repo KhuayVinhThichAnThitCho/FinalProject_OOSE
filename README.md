@@ -1,123 +1,142 @@
-# FinalProject_OOSE — Bookstore Backend (Spring Boot + JPA + MySQL + JWT)
+﻿# FinalProject_OOSE - Commercial Bookstore
 
-Backend REST API cho hệ thống nhà sách theo đặc tả OOSE:
-- Đặt hàng + thanh toán (mock payment gateway)
-- Theo dõi đơn hàng
-- Xử lý đơn hàng (staff/manager)
-- Xử lý yêu cầu hủy đơn
-- Cập nhật giá bán sách (có cảnh báo bán lỗ)
-- Báo cáo bán hàng + export XLSX/PDF
-- JWT Security + JPA Auditing
+Du an gom 2 phan:
+- Backend: Spring Boot + JPA + MySQL + JWT
+- Frontend: React + Vite + TypeScript
 
-## Yêu cầu
-- **Java 17**
-- **Maven** (hoặc dùng `mvnw` nếu bạn tự thêm wrapper)
-- **Docker Desktop** (để chạy MySQL bằng Docker Compose)
+README nay huong dan chay full du an va dang nhap theo tung role.
 
-## Chạy MySQL bằng Docker
-Tại thư mục project:
+## 1) Yeu cau moi truong
+
+- Java 17
+- Maven 3.9+
+- Node.js 20+ (khuyen nghi LTS)
+- npm 10+
+- Docker Desktop
+
+## 2) Chay database MySQL
+
+Tai thu muc goc project:
 
 ```bash
 docker compose up -d
 ```
 
-MySQL sẽ chạy ở `localhost:3306`, database `bookstore`.
+Thong tin DB:
+- Host: `localhost`
+- Port: `3306`
+- Database: `bookstore`
+- Username: `root`
+- Password: `root`
 
-## Cấu hình DB
-File cấu hình: `src/main/resources/application.yml`
+> Backend dang doc config tu `src/main/resources/application.yml`.
 
-Mặc định backend dùng:
-- URL: `jdbc:mysql://localhost:3306/bookstore?...`
-- user/pass: `root/root`
+## 3) Chay backend (Spring Boot)
 
-## Chạy backend
+Tai thu muc goc project:
 
 ```bash
 mvn spring-boot:run
 ```
 
-Khi chạy lần đầu, **Flyway** sẽ tự tạo schema và seed dữ liệu.
+Backend se chay tai: [http://localhost:8080](http://localhost:8080)
 
-## Swagger UI
-Mở trình duyệt:
-- `http://localhost:8080/swagger-ui/index.html`
+Lan chay dau:
+- Flyway tu dong tao schema
+- Seed data user/books/payment methods tu migrations (`V2`, `V4`)
 
-## Đăng nhập (JWT)
+Swagger:
+- [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+## 4) Chay frontend (React)
+
+Mo terminal moi, vao thu muc frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend se chay tai: [http://localhost:5173](http://localhost:5173)
+
+## 5) Dang nhap theo tung role
+
+Tat ca mat khau dev deu la: `password`
+
+| Role | Username | Password | Man hinh sau login |
+|---|---|---|---|
+| CUSTOMER | `customer` | `password` | Catalog / Cart / Checkout / My Orders |
+| STAFF | `staff` | `password` | Order Queue / Cancel Queue |
+| MANAGER | `manager` | `password` | Dashboard / Pricing / Reports |
+
+Nguon seed credentials: `src/main/resources/db/migration/V2__seed.sql`.
+
+## 6) API login (neu can test bang Postman/PowerShell)
+
 Endpoint:
 - `POST /api/auth/login`
 
-Tài khoản seed (dev):
-- **customer / password** (ROLE_CUSTOMER)
-- **staff / password** (ROLE_STAFF)
-- **manager / password** (ROLE_MANAGER)
+Body:
 
-### Test nhanh bằng PowerShell
+```json
+{
+  "username": "customer",
+  "password": "password"
+}
+```
+
+PowerShell nhanh:
 
 ```powershell
 $body = @{ username = "customer"; password = "password" } | ConvertTo-Json
 $res = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/auth/login" -ContentType "application/json" -Body $body
-$token = $res.token
-
-# gọi API cần auth (ví dụ: list orders của customer khachHangId=1)
-$headers = @{ Authorization = "Bearer $token" }
-Invoke-RestMethod -Method Get -Uri "http://localhost:8080/api/orders?khachHangId=1" -Headers $headers
+$res
 ```
 
-## Luồng API chính (tóm tắt)
+Sau khi login thanh cong, lay `token` va gan header:
+- `Authorization: Bearer <token>`
 
-### 1) Checkout (đặt hàng + thanh toán)
-- `POST /api/orders/checkout` (ROLE_CUSTOMER)
+## 7) Luong chuc nang chinh theo role
 
-Body mẫu:
+### CUSTOMER
+- Xem catalog (`/api/books`)
+- Them vao cart
+- Checkout theo flow: tao order -> confirm order -> payment
+- Xem danh sach don cua minh (`/api/orders/my`)
+- Xem chi tiet don va gui yeu cau huy
 
-```json
-{
-  "khachHangId": 1,
-  "items": [
-    { "sachId": 1, "soLuong": 2 }
-  ],
-  "nguoiNhan": "Nguyen Van A",
-  "soDienThoaiNhan": "0900000000",
-  "diaChiGiaoHang": "HCM",
-  "paymentMethodCode": "ONLINE_OK"
-}
+### STAFF
+- Xem don cho xu ly (`/api/staff/orders/pending`)
+- Xac nhan don (`/api/staff/orders/{id}/confirm`)
+- Xu ly queue yeu cau huy (`/api/cancel-requests/staff`)
+
+### MANAGER
+- Xem KPI dashboard
+- Cap nhat gia sach (`/api/manager/books/{id}/price`)
+- Xem/Export bao cao (`/api/reports/sales`, `/api/reports/sales/export`)
+
+## 8) Lenh huu ich
+
+Tai thu muc `frontend`:
+
+```bash
+npm run lint
+npm run build
 ```
 
-Mock payment behavior theo `paymentMethodCode`:
-- `ONLINE_OK` → thành công
-- `ONLINE_NO_MONEY` → thiếu số dư
-- `ONLINE_MAINT` → bảo trì
-- `ONLINE_CANCEL` → người dùng hủy
-
-### 2) Theo dõi đơn hàng
-- `GET /api/orders?khachHangId=...` (ROLE_CUSTOMER)
-- `GET /api/orders/{id}?khachHangId=...` (ROLE_CUSTOMER)
-
-### 3) Staff xử lý đơn
-- `GET /api/staff/orders/pending` (ROLE_STAFF/ROLE_MANAGER)
-- `POST /api/staff/orders/{id}/confirm` (ROLE_STAFF/ROLE_MANAGER)
-
-### 4) Yêu cầu hủy đơn
-- `POST /api/cancel-requests` (ROLE_CUSTOMER)
-- `GET /api/cancel-requests/staff` (ROLE_STAFF/ROLE_MANAGER)
-- `POST /api/cancel-requests/{id}/approve` (ROLE_STAFF/ROLE_MANAGER)
-- `POST /api/cancel-requests/{id}/reject` (ROLE_STAFF/ROLE_MANAGER)
-
-### 5) Manager cập nhật giá
-- `PUT /api/manager/books/{id}/price` (ROLE_MANAGER)
-
-### 6) Báo cáo bán hàng
-- `GET /api/reports/sales?from=...&to=...` (ROLE_MANAGER)
-- `GET /api/reports/sales/export?from=...&to=...&format=xlsx|pdf` (ROLE_MANAGER)
-
-`from/to` dùng định dạng ISO-8601, ví dụ:
-- `2026-01-01T00:00:00Z`
-
-## Chạy test
+Tai thu muc goc project (backend):
 
 ```bash
 mvn test
 ```
 
-Test dùng H2 in-memory (không cần MySQL).
+## 9) Troubleshooting nhanh
 
+- Loi port 8080 dang bi dung:
+  - Tat process dang chiem port 8080 hoac doi `server.port` trong `application.yml`
+- Loi ket noi DB:
+  - Kiem tra `docker compose ps`
+  - Kiem tra username/password trong `application.yml`
+- Frontend goi API loi CORS/network:
+  - Dam bao backend dang chay truoc (`localhost:8080`)

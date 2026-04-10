@@ -1,4 +1,5 @@
 export type Role = "CUSTOMER" | "STAFF" | "MANAGER";
+export type IdLike = string | number;
 
 export type LoginResponse = {
   token: string;
@@ -31,7 +32,7 @@ export type ShippingInfo = {
 };
 
 export type OrderSummary = {
-  orderId: number;
+  orderId: IdLike;
   ngayDat: string;
   totalAmount: number;
   status: string;
@@ -43,7 +44,7 @@ export type OrderListResponse = {
 };
 
 export type OrderDetail = {
-  orderId: number;
+  orderId: IdLike;
   ngayDat: string;
   totalAmount: number;
   status: string;
@@ -52,7 +53,7 @@ export type OrderDetail = {
 };
 
 export type CreateOrderResponse = {
-  orderId: number;
+  orderId: IdLike;
   orderedAt: string;
   shippingFee: number;
   totalAmount: number;
@@ -62,7 +63,7 @@ export type CreateOrderResponse = {
 };
 
 export type CheckoutResponse = {
-  orderId: number;
+  orderId: IdLike;
   status: string;
   message: string;
 };

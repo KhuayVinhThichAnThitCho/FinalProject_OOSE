@@ -11,6 +11,7 @@ import type {
   OrderSummary,
   PricingResult,
   SalesReportData,
+  IdLike,
 } from "./types";
 
 export const api = {
@@ -26,11 +27,11 @@ export const api = {
     const { data } = await apiClient.post<CreateOrderResponse>("/api/orders", { customerId });
     return data;
   },
-  confirmOrder: async (orderId: number, payload: unknown) => {
+  confirmOrder: async (orderId: IdLike, payload: unknown) => {
     const { data } = await apiClient.post<CreateOrderResponse>(`/api/orders/${orderId}/confirm`, payload);
     return data;
   },
-  checkout: async (orderId: number, paymentMethodCode: string) => {
+  checkout: async (orderId: IdLike, paymentMethodCode: string) => {
     const { data } = await apiClient.post<CheckoutResponse>(`/api/orders/${orderId}/checkout`, {
       paymentMethodCode,
     });
@@ -40,13 +41,13 @@ export const api = {
     const { data } = await apiClient.get<OrderListResponse>("/api/orders/my");
     return data;
   },
-  myOrderDetail: async (orderId: number, customerId: number) => {
+  myOrderDetail: async (orderId: IdLike, customerId: number) => {
     const { data } = await apiClient.get<OrderDetail>(`/api/orders/${orderId}`, {
       params: { customerId },
     });
     return data;
   },
-  createCancelRequest: async (orderId: number, reason: string) => {
+  createCancelRequest: async (orderId: IdLike, reason: string) => {
     const { data } = await apiClient.post<number>("/api/cancel-requests", { orderId, reason });
     return data;
   },
@@ -54,11 +55,11 @@ export const api = {
     const { data } = await apiClient.get<OrderSummary[]>("/api/staff/orders/pending");
     return data;
   },
-  staffOrderDetail: async (orderId: number) => {
+  staffOrderDetail: async (orderId: IdLike) => {
     const { data } = await apiClient.get<OrderDetail>(`/api/staff/orders/${orderId}`);
     return data;
   },
-  staffConfirmOrder: async (orderId: number) => {
+  staffConfirmOrder: async (orderId: IdLike) => {
     const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/confirm`);
     return data;
   },
@@ -96,6 +97,13 @@ export const api = {
     const { data } = await apiClient.get<SalesReportData>("/api/reports/sales", {
       params: { from, to, category, status },
     });
+    return data;
+  },
+  mockAuthorize: async (orderId: IdLike, result: string) => {
+    const { data } = await apiClient.post<{ orderId: string; status: string }>(
+      "/api/payment/mock/authorize",
+      { orderId, result },
+    );
     return data;
   },
   exportReport: async (format: "xlsx" | "pdf", from: string, to: string, category?: string, status?: string) => {
