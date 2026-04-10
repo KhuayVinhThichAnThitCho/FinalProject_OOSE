@@ -1,0 +1,108 @@
+import { apiClient } from "./http/apiClient";
+import type {
+  Book,
+  CancelRequest,
+  CancelRequestDetail,
+  CheckoutResponse,
+  CreateOrderResponse,
+  LoginResponse,
+  OrderDetail,
+  OrderListResponse,
+  OrderSummary,
+  PricingResult,
+  SalesReportData,
+} from "./types";
+
+export const api = {
+  login: async (username: string, password: string) => {
+    const { data } = await apiClient.post<LoginResponse>("/api/auth/login", { username, password });
+    return data;
+  },
+  books: async () => {
+    const { data } = await apiClient.get<Book[]>("/api/books");
+    return data;
+  },
+  createOrder: async (customerId: number) => {
+    const { data } = await apiClient.post<CreateOrderResponse>("/api/orders", { customerId });
+    return data;
+  },
+  confirmOrder: async (orderId: number, payload: unknown) => {
+    const { data } = await apiClient.post<CreateOrderResponse>(`/api/orders/${orderId}/confirm`, payload);
+    return data;
+  },
+  checkout: async (orderId: number, paymentMethodCode: string) => {
+    const { data } = await apiClient.post<CheckoutResponse>(`/api/orders/${orderId}/checkout`, {
+      paymentMethodCode,
+    });
+    return data;
+  },
+  myOrders: async () => {
+    const { data } = await apiClient.get<OrderListResponse>("/api/orders/my");
+    return data;
+  },
+  myOrderDetail: async (orderId: number, customerId: number) => {
+    const { data } = await apiClient.get<OrderDetail>(`/api/orders/${orderId}`, {
+      params: { customerId },
+    });
+    return data;
+  },
+  createCancelRequest: async (orderId: number, reason: string) => {
+    const { data } = await apiClient.post<number>("/api/cancel-requests", { orderId, reason });
+    return data;
+  },
+  staffPendingOrders: async () => {
+    const { data } = await apiClient.get<OrderSummary[]>("/api/staff/orders/pending");
+    return data;
+  },
+  staffOrderDetail: async (orderId: number) => {
+    const { data } = await apiClient.get<OrderDetail>(`/api/staff/orders/${orderId}`);
+    return data;
+  },
+  staffConfirmOrder: async (orderId: number) => {
+    const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/confirm`);
+    return data;
+  },
+  staffCancelRequests: async (status?: string) => {
+    const { data } = await apiClient.get<CancelRequest[]>("/api/cancel-requests/staff", {
+      params: status ? { status } : {},
+    });
+    return data;
+  },
+  staffCancelDetail: async (id: number) => {
+    const { data } = await apiClient.get<CancelRequestDetail>(`/api/cancel-requests/staff/${id}`);
+    return data;
+  },
+  approveCancel: async (id: number) => {
+    const { data } = await apiClient.post<string>(`/api/cancel-requests/${id}/approve`);
+    return data;
+  },
+  rejectCancel: async (id: number) => {
+    const { data } = await apiClient.post<string>(`/api/cancel-requests/${id}/reject`);
+    return data;
+  },
+  managerBooks: async () => {
+    const { data } = await apiClient.get<Book[]>("/api/manager/books");
+    return data;
+  },
+  managerBookDetail: async (id: number) => {
+    const { data } = await apiClient.get<Book>(`/api/manager/books/${id}`);
+    return data;
+  },
+  updateBookPrice: async (id: number, payload: { newSalePrice: number; effectiveFrom: string; allowLossSale: boolean }) => {
+    const { data } = await apiClient.put<PricingResult>(`/api/manager/books/${id}/price`, payload);
+    return data;
+  },
+  salesReport: async (from: string, to: string, category?: string, status?: string) => {
+    const { data } = await apiClient.get<SalesReportData>("/api/reports/sales", {
+      params: { from, to, category, status },
+    });
+    return data;
+  },
+  exportReport: async (format: "xlsx" | "pdf", from: string, to: string, category?: string, status?: string) => {
+    const response = await apiClient.get(`/api/reports/sales/export`, {
+      params: { from, to, format, category, status },
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+};
