@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
@@ -111,8 +113,6 @@ public class Order extends AuditableEntity {
         return status;
     }
 
-    // Named like in staff confirm sequence diagram:
-    // for staff, "pending" means "waiting for confirmation" (PAID).
     public boolean isOrderStatusPending() {
         return status == OrderStatus.PAID;
     }
@@ -147,6 +147,98 @@ public class Order extends AuditableEntity {
 
     public void setCancellationRequest(CancellationRequest cancellationRequest) {
         this.cancellationRequest = cancellationRequest;
+    }
+
+    public static Order makeNewOrder(Customer customer) {
+        Order order = new Order();
+        order.setOrderId(UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE);
+        order.setCustomer(customer);
+        order.setOrderDate(Instant.now());
+        order.setStatus(OrderStatus.PENDING);
+        return order;
+    }
+
+    public void confirmOrder(Map<Long, Integer> quantities, List<Book> books, Long shippingFee) {
+        if (this.status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Order is not in PENDING status");
+        }
+        if (this.items != null && !this.items.isEmpty()) {
+            throw new IllegalStateException("Order was already confirmed");
+        }
+        if (books.size() != quantities.size()) {
+            throw new IllegalArgumentException("Book not found");
+        }
+
+        long sf = shippingFee == null ? 0L : shippingFee;
+        if (sf < 0) {
+            throw new IllegalArgumentException("Invalid shipping fee");
+        }
+
+        long subtotal = 0L;
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (Book book : books) {
+            int qty = quantities.get(book.getId());
+            book.checkStock(qty);
+
+            subtotal += book.getPrice() * (long) qty;
+
+            OrderItem line = new OrderItem();
+            line.setOrder(this);
+            line.setBook(book);
+            line.setQuantity(qty);
+            line.setUnitPrice(book.getPrice());
+            orderItems.add(line);
+        }
+        this.items.addAll(orderItems);
+
+        this.shippingFee = sf;
+        this.totalAmount = subtotal + sf;
+        this.status = OrderStatus.PROCESSING;
+    }
+
+    public void attachShipping(String receiverName, String receiverPhone, String address) {
+        ShippingInfo si = new ShippingInfo();
+        si.setOrder(this);
+        si.setReceiverName(receiverName);
+        si.setReceiverPhone(receiverPhone);
+        si.setAddress(address);
+        si.setShippingStatus("PENDING");
+        this.shippingInfo = si;
+    }
+
+    public boolean isPayable() {
+        return status == OrderStatus.PENDING || status == OrderStatus.PROCESSING;
+    }
+
+    public void markPaid(String partnerTransactionId) {
+        this.status = OrderStatus.PAID;
+    }
+
+    public void markPaymentFailed() {
+        this.status = OrderStatus.PENDING;
+    }
+
+    public void cancel() {
+        if (status == OrderStatus.CANCELLED) {
+            return;
+        }
+        if (status == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Không thể hủy đơn hàng đã giao");
+        }
+        if (status == OrderStatus.SHIPPING) {
+            throw new IllegalStateException("Không thể hủy đơn hàng đang giao");
+        }
+        this.status = OrderStatus.CANCELLED;
+    }
+
+    public void startShipping() {
+        if (!isOrderStatusPending()) {
+            throw new IllegalStateException("Đơn hàng đã được xác nhận");
+        }
+        for (OrderItem item : this.items) {
+            item.getBook().checkStock(item.getQuantity());
+        }
+        this.status = OrderStatus.SHIPPING;
     }
 }
 

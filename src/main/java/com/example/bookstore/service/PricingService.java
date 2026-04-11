@@ -21,20 +21,12 @@ public class PricingService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sách"));
 
-        if (newSalePrice <= 0) {
-            throw new IllegalArgumentException("Giá bán không hợp lệ");
+        Book.PriceValidation v = book.validatePriceUpdate(newSalePrice, allowLossSale);
+        if (!v.canApply()) {
+            return new PricingResult(false, v.message(), book.getCostPrice(), book.getPrice(), newSalePrice);
         }
 
-        if (newSalePrice < book.getCostPrice() && !allowLossSale) {
-            return new PricingResult(false,
-                    "Giá bán hiện tại đang thấp hơn giá vốn. Bạn có chắc chắn muốn tiếp tục?",
-                    book.getCostPrice(),
-                    book.getPrice(),
-                    newSalePrice);
-        }
-
-        book.setPrice(newSalePrice);
-        book.setSalePrice(newSalePrice, applyTime);
+        book.applyNewPrice(newSalePrice, applyTime);
         bookRepository.save(book);
         return new PricingResult(true, "Cập nhật giá bán thành công", book.getCostPrice(), book.getPrice(), newSalePrice);
     }

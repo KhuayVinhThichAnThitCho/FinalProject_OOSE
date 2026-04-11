@@ -1,6 +1,7 @@
 package com.example.bookstore.domain.entity;
 
 import jakarta.persistence.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Set;
 
@@ -74,6 +75,12 @@ public class UserAccount extends AuditableEntity {
 
     public void setStaff(Staff staff) {
         this.staff = staff;
+    }
+
+    public void authenticate(String rawPassword, PasswordEncoder encoder) {
+        if (!encoder.matches(rawPassword, this.passwordHash)) {
+            throw new IllegalArgumentException("Sai tài khoản hoặc mật khẩu");
+        }
     }
 }
 

@@ -1,8 +1,10 @@
 package com.example.bookstore.domain.entity;
 
 import com.example.bookstore.domain.enums.CancelRequestStatus;
+import com.example.bookstore.domain.enums.OrderStatus;
 import jakarta.persistence.*;
 
+import java.time.Duration;
 import java.time.Instant;
 
 @Entity
@@ -66,6 +68,53 @@ public class CancellationRequest extends AuditableEntity {
 
     public void setStatus(CancelRequestStatus status) {
         this.status = status;
+    }
+
+    public static CancellationRequest createFor(Order order, String reason) {
+        OrderStatus os = order.getStatus();
+        if (os == OrderStatus.SHIPPING || os == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel this order");
+        }
+        if (order.getOrderedAt() != null) {
+            Duration age = Duration.between(order.getOrderedAt(), Instant.now());
+            if (age.toHours() > 24) {
+                throw new IllegalStateException("Cancellation window expired");
+            }
+        }
+
+        CancellationRequest req = new CancellationRequest();
+        req.setOrder(order);
+        req.setReason(reason);
+        req.setRequestedAt(Instant.now());
+        req.setStatus(CancelRequestStatus.PENDING);
+        return req;
+    }
+
+    public void approve() {
+        if (this.status != CancelRequestStatus.PENDING) {
+            throw new IllegalStateException("Yêu cầu hủy đã được xử lý trước đó");
+        }
+
+        Order o = this.order;
+        if (o.getOrderedAt() != null) {
+            Duration age = Duration.between(o.getOrderedAt(), Instant.now());
+            if (age.toHours() > 24) {
+                throw new IllegalStateException("Đã quá thời gian cho phép hủy đơn");
+            }
+        }
+        if (o.getStatus() == OrderStatus.SHIPPING || o.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Không thể hủy đơn hàng này");
+        }
+
+        o.updateStatus(OrderStatus.CANCELLED);
+        this.status = CancelRequestStatus.APPROVED;
+    }
+
+    public void reject() {
+        if (this.status != CancelRequestStatus.PENDING) {
+            throw new IllegalStateException("Yêu cầu hủy đã được xử lý trước đó");
+        }
+        this.status = CancelRequestStatus.REJECTED;
     }
 }
 

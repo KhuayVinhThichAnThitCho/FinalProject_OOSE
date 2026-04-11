@@ -90,5 +90,34 @@ public class Book extends AuditableEntity {
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
     }
+
+    public record PriceValidation(boolean canApply, String message) {}
+
+    public PriceValidation validatePriceUpdate(Long newPrice, boolean allowLossSale) {
+        if (newPrice == null || newPrice <= 0) {
+            throw new IllegalArgumentException("Giá bán không hợp lệ");
+        }
+        if (newPrice < costPrice && !allowLossSale) {
+            return new PriceValidation(false,
+                    "Giá bán hiện tại đang thấp hơn giá vốn. Bạn có chắc chắn muốn tiếp tục?");
+        }
+        return new PriceValidation(true, null);
+    }
+
+    public void applyNewPrice(Long newPrice, Instant effectiveFrom) {
+        this.salePrice = newPrice;
+        this.salePriceEffectiveFrom = effectiveFrom == null ? Instant.now() : effectiveFrom;
+    }
+
+    public void checkStock(int quantity) {
+        if (stockQuantity < quantity) {
+            throw new IllegalStateException("Insufficient stock for book: " + title);
+        }
+    }
+
+    public void deductStock(int quantity) {
+        checkStock(quantity);
+        this.stockQuantity -= quantity;
+    }
 }
 

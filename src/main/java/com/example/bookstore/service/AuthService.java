@@ -26,9 +26,7 @@ public class AuthService {
         UserAccount user = userAccountRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Sai tài khoản hoặc mật khẩu"));
 
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Sai tài khoản hoặc mật khẩu");
-        }
+        user.authenticate(password, passwordEncoder);
 
         List<String> roles = user.getRoles() == null ? List.of() : new ArrayList<>(user.getRoles());
         String token = jwtService.generate(username, roles);
