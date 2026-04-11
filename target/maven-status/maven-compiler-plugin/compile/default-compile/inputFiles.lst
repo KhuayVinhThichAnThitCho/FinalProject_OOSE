@@ -5,10 +5,10 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\config\JwtServi
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\config\SecurityConfig.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\AuditableEntity.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\Book.java
-D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\CancellationRequest.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\CancelRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\Customer.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\Order.java
-D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\OrderItem.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\OrderDetail.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\Payment.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\PaymentMethod.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\entity\ShippingInfo.java
@@ -18,7 +18,7 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\enums\Ca
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\enums\OrderStatus.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\domain\enums\PaymentStatus.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\repository\BookRepository.java
-D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\repository\CancellationRequestRepository.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\repository\CancelRequestRepository.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\repository\CustomerRepository.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\repository\OrderRepository.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\repository\PaymentMethodRepository.java
@@ -49,8 +49,8 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\LoginRe
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\MakeNewOrderRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\MockAuthorizePaymentRequest.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\MockAuthorizePaymentResponse.java
-D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderDetail.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderDetailResponse.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderDetailView.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderItemDto.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderListResponse.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\OrderSummaryResponse.java

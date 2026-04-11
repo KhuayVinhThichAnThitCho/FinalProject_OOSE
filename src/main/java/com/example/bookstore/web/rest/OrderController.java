@@ -10,7 +10,7 @@ import com.example.bookstore.web.dto.CheckoutResponse;
 import com.example.bookstore.web.dto.ConfirmOrderRequest;
 import com.example.bookstore.web.dto.CreateOrderResponse;
 import com.example.bookstore.web.dto.MakeNewOrderRequest;
-import com.example.bookstore.web.dto.OrderDetail;
+import com.example.bookstore.web.dto.OrderDetailView;
 import com.example.bookstore.web.dto.OrderItemDto;
 import com.example.bookstore.web.dto.OrderListResponse;
 import com.example.bookstore.web.dto.OrderSummaryResponse;
@@ -41,7 +41,7 @@ public class OrderController {
         OrderService.CreateOrderResult created = orderService.makeNewOrder(request.customerId());
 
         Order o = orderRepository.findById(created.orderId()).orElseThrow();
-        List<OrderItemDto> itemDtos = o.getItems().stream()
+        List<OrderItemDto> itemDtos = o.getOrderDetails().stream()
                 .map(i -> new OrderItemDto(i.getBook().getId(), i.getBook().getTitle(), i.getQuantity(), i.getUnitPrice()))
                 .toList();
 
@@ -93,7 +93,7 @@ public class OrderController {
         );
 
         Order o = orderRepository.findById(created.orderId()).orElseThrow();
-        List<OrderItemDto> itemDtos = o.getItems().stream()
+        List<OrderItemDto> itemDtos = o.getOrderDetails().stream()
                 .map(i -> new OrderItemDto(i.getBook().getId(), i.getBook().getTitle(), i.getQuantity(), i.getUnitPrice()))
                 .toList();
 
@@ -157,7 +157,7 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public OrderDetail viewOrderDetail(
+    public OrderDetailView viewOrderDetail(
             @PathVariable("id") Long orderId,
             @RequestParam("customerId") Long customerId
     ) {
@@ -173,15 +173,15 @@ public class OrderController {
                 ))
                 .toList();
 
-        OrderDetail.ShippingInfo shipping = o.getShippingInfo() == null ? null :
-                new OrderDetail.ShippingInfo(
+        OrderDetailView.ShippingInfo shipping = o.getShippingInfo() == null ? null :
+                new OrderDetailView.ShippingInfo(
                         o.getShippingInfo().getAddress(),
                         o.getShippingInfo().getReceiverName(),
                         o.getShippingInfo().getReceiverPhone(),
                         o.getShippingInfo().getShippingStatus()
                 );
 
-        return new OrderDetail(
+        return new OrderDetailView(
                 o.getId(),
                 o.getOrderedAt(),
                 o.getTotalAmount(),

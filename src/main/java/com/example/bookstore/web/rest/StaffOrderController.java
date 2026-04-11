@@ -4,7 +4,7 @@ import com.example.bookstore.domain.entity.Order;
 import com.example.bookstore.domain.enums.OrderStatus;
 import com.example.bookstore.repository.OrderRepository;
 import com.example.bookstore.service.OrderService;
-import com.example.bookstore.web.dto.OrderDetail;
+import com.example.bookstore.web.dto.OrderDetailView;
 import com.example.bookstore.web.dto.OrderItemDto;
 import com.example.bookstore.web.dto.OrderSummaryResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,7 +33,7 @@ public class StaffOrderController {
     }
 
     @GetMapping("/{id}")
-    public OrderDetail viewOrderDetail(@PathVariable("id") Long orderId) {
+    public OrderDetailView viewOrderDetail(@PathVariable("id") Long orderId) {
         Order o = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin đơn hàng."));
 
@@ -46,15 +46,15 @@ public class StaffOrderController {
                 ))
                 .toList();
 
-        OrderDetail.ShippingInfo shipping = o.getShippingInfo() == null ? null :
-                new OrderDetail.ShippingInfo(
+        OrderDetailView.ShippingInfo shipping = o.getShippingInfo() == null ? null :
+                new OrderDetailView.ShippingInfo(
                         o.getShippingInfo().getAddress(),
                         o.getShippingInfo().getReceiverName(),
                         o.getShippingInfo().getReceiverPhone(),
                         o.getShippingInfo().getShippingStatus()
                 );
 
-        return new OrderDetail(
+        return new OrderDetailView(
                 o.getId(),
                 o.getOrderedAt(),
                 o.getTotalAmount(),

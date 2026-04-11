@@ -1,7 +1,7 @@
 package com.example.bookstore.service;
 
 import com.example.bookstore.domain.entity.Order;
-import com.example.bookstore.domain.entity.OrderItem;
+import com.example.bookstore.domain.entity.OrderDetail;
 import com.example.bookstore.domain.enums.OrderStatus;
 import com.example.bookstore.repository.OrderRepository;
 import org.springframework.stereotype.Service;
@@ -54,13 +54,13 @@ public class ReportService {
         Double growthPercent = prevRevenue == 0 ? null : ((totalRevenue - prevRevenue) * 100.0) / prevRevenue;
 
         Map<Long, BookAgg> bookAgg = orders.stream()
-                .flatMap(o -> o.getItems().stream())
+                .flatMap(o -> o.getOrderDetails().stream())
                 .filter(i -> category == null || category.isBlank() || category.equalsIgnoreCase(i.getBook().getCategory()))
                 .collect(Collectors.groupingBy(
                         i -> i.getBook().getId(),
                         Collectors.collectingAndThen(Collectors.toList(), list -> {
-                            OrderItem first = list.get(0);
-                            long qty = list.stream().mapToLong(OrderItem::getQuantity).sum();
+                            OrderDetail first = list.get(0);
+                            long qty = list.stream().mapToLong(OrderDetail::getQuantity).sum();
                             return new BookAgg(first.getBook().getId(), first.getBook().getTitle(), first.getBook().getCategory(), qty);
                         })
                 ));
@@ -88,7 +88,7 @@ public class ReportService {
                     if (category == null || category.isBlank()) {
                         return true;
                     }
-                    return o.getItems().stream()
+                    return o.getOrderDetails().stream()
                             .anyMatch(i -> category.equalsIgnoreCase(i.getBook().getCategory()));
                 })
                 .toList();

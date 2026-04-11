@@ -9,7 +9,7 @@ public record CancelRequestDetailResponse(
         CancelRequestStatus status,
         String reason,
         Instant requestedAt,
-        OrderDetail orderDetail
+        OrderDetailView orderDetail
 ) {
 }
 

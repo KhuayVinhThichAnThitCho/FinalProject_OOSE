@@ -5,7 +5,10 @@ import com.example.bookstore.domain.enums.OrderStatus;
 import java.time.Instant;
 import java.util.List;
 
-public record OrderDetail(
+/**
+ * REST view of an order; distinct from domain entity {@link com.example.bookstore.domain.entity.OrderDetail}.
+ */
+public record OrderDetailView(
         Long orderId,
         Instant ngayDat,
         Long totalAmount,
@@ -21,4 +24,3 @@ public record OrderDetail(
     ) {
     }
 }
-

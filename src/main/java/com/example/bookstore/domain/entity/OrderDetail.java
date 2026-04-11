@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "order_items")
-public class OrderItem extends AuditableEntity {
+public class OrderDetail extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,7 +41,6 @@ public class OrderItem extends AuditableEntity {
         return book;
     }
 
-    // Named like in sequence diagram
     public Book getBookInfo() {
         return book;
     }
@@ -66,4 +65,3 @@ public class OrderItem extends AuditableEntity {
         this.unitPrice = unitPrice;
     }
 }
-

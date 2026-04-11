@@ -7,7 +7,7 @@ import com.example.bookstore.service.CancelRequestService;
 import com.example.bookstore.repository.CancelRequestRepository;
 import com.example.bookstore.web.dto.CancelRequestCreate;
 import com.example.bookstore.web.dto.CancelRequestDetailResponse;
-import com.example.bookstore.web.dto.OrderDetail;
+import com.example.bookstore.web.dto.OrderDetailView;
 import com.example.bookstore.web.dto.OrderItemDto;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,15 +58,15 @@ public class CancelRequestController {
                 ))
                 .toList();
 
-        OrderDetail.ShippingInfo shipping = o.getShippingInfo() == null ? null :
-                new OrderDetail.ShippingInfo(
+        OrderDetailView.ShippingInfo shipping = o.getShippingInfo() == null ? null :
+                new OrderDetailView.ShippingInfo(
                         o.getShippingInfo().getAddress(),
                         o.getShippingInfo().getReceiverName(),
                         o.getShippingInfo().getReceiverPhone(),
                         o.getShippingInfo().getShippingStatus()
                 );
 
-        OrderDetail orderDetail = new OrderDetail(
+        OrderDetailView orderDetailView = new OrderDetailView(
                 o.getId(),
                 o.getOrderedAt(),
                 o.getTotalAmount(),
@@ -80,7 +80,7 @@ public class CancelRequestController {
                 req.getStatus(),
                 req.getReason(),
                 req.getRequestedAt(),
-                orderDetail
+                orderDetailView
         );
     }
 

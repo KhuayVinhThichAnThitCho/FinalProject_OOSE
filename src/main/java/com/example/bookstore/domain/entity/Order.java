@@ -42,7 +42,7 @@ public class Order extends AuditableEntity {
     private Long version;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> items = new ArrayList<>();
+    private List<OrderDetail> orderDetails = new ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
@@ -121,12 +121,8 @@ public class Order extends AuditableEntity {
         this.status = status;
     }
 
-    public List<OrderItem> getItems() {
-        return items;
-    }
-
-    public List<OrderItem> getOrderDetails() {
-        return items;
+    public List<OrderDetail> getOrderDetails() {
+        return orderDetails;
     }
 
     public List<Payment> getPayments() {
@@ -162,7 +158,7 @@ public class Order extends AuditableEntity {
         if (this.status != OrderStatus.PENDING) {
             throw new IllegalStateException("Order is not in PENDING status");
         }
-        if (this.items != null && !this.items.isEmpty()) {
+        if (this.orderDetails != null && !this.orderDetails.isEmpty()) {
             throw new IllegalStateException("Order was already confirmed");
         }
         if (books.size() != quantities.size()) {
@@ -175,21 +171,21 @@ public class Order extends AuditableEntity {
         }
 
         long subtotal = 0L;
-        List<OrderItem> orderItems = new ArrayList<>();
+        List<OrderDetail> lines = new ArrayList<>();
         for (Book book : books) {
             int qty = quantities.get(book.getId());
             book.checkStock(qty);
 
             subtotal += book.getPrice() * (long) qty;
 
-            OrderItem line = new OrderItem();
+            OrderDetail line = new OrderDetail();
             line.setOrder(this);
             line.setBook(book);
             line.setQuantity(qty);
             line.setUnitPrice(book.getPrice());
-            orderItems.add(line);
+            lines.add(line);
         }
-        this.items.addAll(orderItems);
+        this.orderDetails.addAll(lines);
 
         this.shippingFee = sf;
         this.totalAmount = subtotal + sf;
@@ -235,8 +231,8 @@ public class Order extends AuditableEntity {
         if (!isOrderStatusPending()) {
             throw new IllegalStateException("Đơn hàng đã được xác nhận");
         }
-        for (OrderItem item : this.items) {
-            item.getBook().checkStock(item.getQuantity());
+        for (OrderDetail line : this.orderDetails) {
+            line.getBook().checkStock(line.getQuantity());
         }
         this.status = OrderStatus.SHIPPING;
     }

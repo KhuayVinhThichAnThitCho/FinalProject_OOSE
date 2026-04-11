@@ -23,7 +23,6 @@ com\example\bookstore\service\PricingService.class
 com\example\bookstore\web\rest\ReportController.class
 com\example\bookstore\repository\OrderRepository.class
 com\example\bookstore\web\dto\CheckoutResponse.class
-com\example\bookstore\repository\CancellationRequestRepository.class
 com\example\bookstore\service\OrderService$ItemRequest.class
 com\example\bookstore\web\dto\MockAuthorizePaymentRequest.class
 com\example\bookstore\web\dto\OrderDetailResponse.class
@@ -41,11 +40,9 @@ com\example\bookstore\web\dto\ConfirmOrderRequest.class
 com\example\bookstore\web\rest\ApiExceptionHandler$ApiError.class
 com\example\bookstore\service\AuthService.class
 com\example\bookstore\web\rest\AuthController.class
-com\example\bookstore\domain\entity\CancellationRequest.class
 com\example\bookstore\repository\PaymentMethodRepository.class
 com\example\bookstore\config\SecurityConfig.class
 com\example\bookstore\service\PricingService$PricingResult.class
-com\example\bookstore\domain\entity\OrderItem.class
 com\example\bookstore\service\ReportService.class
 com\example\bookstore\config\AuditorAwareImpl.class
 com\example\bookstore\domain\entity\Customer.class

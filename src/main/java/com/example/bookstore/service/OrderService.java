@@ -109,9 +109,9 @@ public class OrderService {
                 payment.setPartnerTransactionId(result.partnerTransactionId());
 
                 try {
-                    for (OrderItem item : order.getItems()) {
-                        item.getBook().deductStock(item.getQuantity());
-                        bookRepository.save(item.getBook());
+                    for (OrderDetail line : order.getOrderDetails()) {
+                        line.getBook().deductStock(line.getQuantity());
+                        bookRepository.save(line.getBook());
                     }
                 } catch (OptimisticLockException ex) {
                     throw new IllegalStateException("Inventory was modified concurrently, please retry");
