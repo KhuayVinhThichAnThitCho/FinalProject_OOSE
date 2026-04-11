@@ -1,8 +1,8 @@
 package com.example.bookstore.service;
 
-import com.example.bookstore.domain.entity.CancellationRequest;
+import com.example.bookstore.domain.entity.CancelRequest;
 import com.example.bookstore.domain.entity.Order;
-import com.example.bookstore.repository.CancellationRequestRepository;
+import com.example.bookstore.repository.CancelRequestRepository;
 import com.example.bookstore.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,50 +11,50 @@ import org.springframework.transaction.annotation.Transactional;
 public class CancelRequestService {
 
     private final OrderRepository orderRepository;
-    private final CancellationRequestRepository cancellationRequestRepository;
+    private final CancelRequestRepository cancelRequestRepository;
 
-    public CancelRequestService(OrderRepository orderRepository, CancellationRequestRepository cancellationRequestRepository) {
+    public CancelRequestService(OrderRepository orderRepository, CancelRequestRepository cancelRequestRepository) {
         this.orderRepository = orderRepository;
-        this.cancellationRequestRepository = cancellationRequestRepository;
+        this.cancelRequestRepository = cancelRequestRepository;
     }
 
     @Transactional
-    public CancellationRequest create(Long orderId, String reason) {
+    public CancelRequest create(Long orderId, String reason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        cancellationRequestRepository.findByOrderId(orderId).ifPresent(x -> {
+        cancelRequestRepository.findByOrderId(orderId).ifPresent(x -> {
             throw new IllegalStateException("Order already has a cancellation request");
         });
 
-        CancellationRequest req = CancellationRequest.createFor(order, reason);
-        return cancellationRequestRepository.save(req);
+        CancelRequest req = CancelRequest.createFor(order, reason);
+        return cancelRequestRepository.save(req);
     }
 
     @Transactional
     public String approve(Long requestId) {
-        CancellationRequest req = cancellationRequestRepository.findById(requestId)
+        CancelRequest req = cancelRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
 
         req.approve();
-        cancellationRequestRepository.save(req);
+        cancelRequestRepository.save(req);
         orderRepository.save(req.getOrder());
         return "Hủy đơn hàng thành công";
     }
 
     @Transactional
     public String reject(Long requestId) {
-        CancellationRequest req = cancellationRequestRepository.findById(requestId)
+        CancelRequest req = cancelRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
         req.reject();
-        cancellationRequestRepository.save(req);
+        cancelRequestRepository.save(req);
         return "Yêu cầu hủy đã bị từ chối";
     }
 
 
     @Transactional(readOnly = true)
-    public CancellationRequest viewCancelRequest(Long cancelId) {
-        return cancellationRequestRepository.findById(cancelId)
+    public CancelRequest viewCancelRequest(Long cancelId) {
+        return cancelRequestRepository.findById(cancelId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy yêu cầu hủy"));
     }
 

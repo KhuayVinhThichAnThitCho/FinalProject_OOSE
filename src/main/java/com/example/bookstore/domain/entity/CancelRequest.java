@@ -9,7 +9,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "cancellation_requests")
-public class CancellationRequest extends AuditableEntity {
+public class CancelRequest extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,7 +38,7 @@ public class CancellationRequest extends AuditableEntity {
         return order;
     }
 
-    public CancellationRequest getCancelRequest() {
+    public CancelRequest getCancelRequest() {
         return this;
     }
 
@@ -70,7 +70,7 @@ public class CancellationRequest extends AuditableEntity {
         this.status = status;
     }
 
-    public static CancellationRequest createFor(Order order, String reason) {
+    public static CancelRequest createFor(Order order, String reason) {
         OrderStatus os = order.getStatus();
         if (os == OrderStatus.SHIPPING || os == OrderStatus.DELIVERED) {
             throw new IllegalStateException("Cannot cancel this order");
@@ -82,7 +82,7 @@ public class CancellationRequest extends AuditableEntity {
             }
         }
 
-        CancellationRequest req = new CancellationRequest();
+        CancelRequest req = new CancelRequest();
         req.setOrder(order);
         req.setReason(reason);
         req.setRequestedAt(Instant.now());

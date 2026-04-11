@@ -51,7 +51,7 @@ public class Order extends AuditableEntity {
     private ShippingInfo shippingInfo;
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private CancellationRequest cancellationRequest;
+    private CancelRequest cancelRequest;
 
     public Long getId() {
         return id;
@@ -141,12 +141,12 @@ public class Order extends AuditableEntity {
         this.shippingInfo = shippingInfo;
     }
 
-    public CancellationRequest getCancellationRequest() {
-        return cancellationRequest;
+    public CancelRequest getCancelRequest() {
+        return cancelRequest;
     }
 
-    public void setCancellationRequest(CancellationRequest cancellationRequest) {
-        this.cancellationRequest = cancellationRequest;
+    public void setCancelRequest(CancelRequest cancelRequest) {
+        this.cancelRequest = cancelRequest;
     }
 
     public static Order makeNewOrder(Customer customer) {
