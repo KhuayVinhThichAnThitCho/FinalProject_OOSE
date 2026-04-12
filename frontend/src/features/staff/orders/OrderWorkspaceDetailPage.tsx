@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { api } from "../../../shared/api";
 import { useLoad } from "../../../shared/hooks/useLoad";
 import { mapOrderDetailVM } from "../../../entities/order/mappers";
@@ -7,14 +7,16 @@ import { Card, EmptyState, ErrorBanner, StatusBadge, DataTable, ConfirmDialog } 
 import { useToast } from "../../../shared/ui/toast";
 import { getErrorMessage } from "../../../shared/lib/error";
 import { formatCurrency } from "../../../shared/lib/format";
-import { ArrowLeft, Truck } from "lucide-react";
+import { ArrowLeft, Truck, Ban } from "lucide-react";
 
 export default function OrderWorkspaceDetailPage() {
   const { id } = useParams();
   const orderId = id ?? "";
+  const navigate = useNavigate();
   const [reloadKey, setReloadKey] = useState(0);
   const { data, loading, error } = useLoad(() => api.staffOrderDetail(orderId), [orderId, reloadKey]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const { push } = useToast();
 
   if (loading) return <Card>Đang tải chi tiết...</Card>;
@@ -35,12 +37,17 @@ export default function OrderWorkspaceDetailPage() {
           <h2 className="order-heading-id">Đơn hàng #{String(vm.id)}</h2>
           <p className="muted">{vm.dateText}</p>
         </div>
-        <div className="row">
+        <div className="row staff-order-actions">
           <StatusBadge status={vm.status} />
           {canConfirm && (
-            <button className="btn btn-primary" onClick={() => setConfirmOpen(true)}>
-              <Truck size={16} /> Xác nhận giao hàng
-            </button>
+            <>
+              <button type="button" className="btn" onClick={() => setCancelConfirmOpen(true)}>
+                <Ban size={16} /> Hủy xác nhận
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => setConfirmOpen(true)}>
+                <Truck size={16} /> Xác nhận giao hàng
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -91,6 +98,28 @@ export default function OrderWorkspaceDetailPage() {
             push(getErrorMessage(e, "Xác nhận thất bại"), "error");
           } finally {
             setConfirmOpen(false);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        title="Hủy xác nhận đơn hàng?"
+        body={
+          <p>
+            Hệ thống <strong>giữ nguyên</strong> trạng thái đơn hàng. Bạn chỉ thoát thao tác xác nhận giao hàng trên màn hình này.
+          </p>
+        }
+        onClose={() => setCancelConfirmOpen(false)}
+        onConfirm={async () => {
+          try {
+            const msg = await api.staffCancelOrderConfirmation(vm.id);
+            push(typeof msg === "string" ? msg : "Đã hủy xác nhận đơn hàng!", "info");
+            navigate("/staff/orders");
+          } catch (e) {
+            push(getErrorMessage(e, "Thao tác thất bại"), "error");
+          } finally {
+            setCancelConfirmOpen(false);
           }
         }}
       />

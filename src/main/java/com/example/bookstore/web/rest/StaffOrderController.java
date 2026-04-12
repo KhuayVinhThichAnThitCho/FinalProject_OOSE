@@ -72,8 +72,7 @@ public class StaffOrderController {
     @PostMapping("/{id}/cancel-processing")
     public String cancelProcessing(@PathVariable("id") Long orderId) {
         orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin đơn hàng."));
         return "Đã hủy xác nhận đơn hàng!";
     }
 }

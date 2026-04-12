@@ -78,7 +78,7 @@ public class CancelRequest extends AuditableEntity {
         if (order.getOrderedAt() != null) {
             Duration age = Duration.between(order.getOrderedAt(), Instant.now());
             if (age.toHours() > 24) {
-                throw new IllegalStateException("Cancellation window expired");
+                throw new IllegalStateException("Đã quá thời gian cho phép hủy đơn");
             }
         }
 

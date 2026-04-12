@@ -7,6 +7,7 @@ import com.example.bookstore.service.CancelRequestService;
 import com.example.bookstore.repository.CancelRequestRepository;
 import com.example.bookstore.web.dto.CancelRequestCreate;
 import com.example.bookstore.web.dto.CancelRequestDetailResponse;
+import com.example.bookstore.web.dto.CancelRequestSummaryResponse;
 import com.example.bookstore.web.dto.OrderDetailView;
 import com.example.bookstore.web.dto.OrderItemDto;
 import jakarta.validation.Valid;
@@ -36,11 +37,22 @@ public class CancelRequestController {
 
     @GetMapping("/staff")
     @PreAuthorize("hasAnyRole('STAFF','MANAGER')")
-    public List<CancelRequest> viewCancelRequest(@RequestParam(value = "status", required = false) CancelRequestStatus status) {
-        if (status == null) {
-            return cancelRequestRepository.findAll();
-        }
-        return cancelRequestRepository.findByStatus(status);
+    public List<CancelRequestSummaryResponse> viewCancelRequest(@RequestParam(value = "status", required = false) CancelRequestStatus status) {
+        List<CancelRequest> list = status == null
+                ? cancelRequestRepository.findAll()
+                : cancelRequestRepository.findByStatus(status);
+        return list.stream().map(this::toSummary).toList();
+    }
+
+    private CancelRequestSummaryResponse toSummary(CancelRequest cr) {
+        Order o = cr.getOrder();
+        return new CancelRequestSummaryResponse(
+                cr.getId(),
+                new CancelRequestSummaryResponse.OrderRef(o.getId(), o.getStatus().name()),
+                cr.getReason(),
+                cr.getStatus().name(),
+                cr.getRequestedAt()
+        );
     }
 
     @GetMapping("/staff/{id}")

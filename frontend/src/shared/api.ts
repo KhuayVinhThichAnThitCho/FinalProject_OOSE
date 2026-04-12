@@ -63,6 +63,11 @@ export const api = {
     const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/confirm`);
     return data;
   },
+ 
+  staffCancelOrderConfirmation: async (orderId: IdLike) => {
+    const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/cancel-processing`);
+    return data;
+  },
   staffCancelRequests: async (status?: string) => {
     const { data } = await apiClient.get<CancelRequest[]>("/api/cancel-requests/staff", {
       params: status ? { status } : {},

@@ -8,7 +8,7 @@ import { Card, EmptyState, ErrorBanner, StatusBadge, ConfirmDialog, Input, DataT
 import { useToast } from "../../../shared/ui/toast";
 import { getErrorMessage } from "../../../shared/lib/error";
 import { formatCurrency } from "../../../shared/lib/format";
-import { ArrowLeft, CreditCard, Loader2, MapPin, XCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2, XCircle } from "lucide-react";
 
 const TIMELINE = ["PENDING", "PROCESSING", "PAID", "SHIPPING", "DELIVERED"];
 
@@ -45,7 +45,6 @@ export default function OrderDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("ONLINE");
   const [mockOutcome, setMockOutcome] = useState("SUCCESS");
   const [paying, setPaying] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -65,10 +64,8 @@ export default function OrderDetailPage() {
     setPaymentError(null);
     setPaying(true);
     try {
-      if (paymentMethod === "ONLINE") {
-        await api.mockAuthorize(orderId, mockOutcome);
-      }
-      const result = await api.checkout(orderId, paymentMethod);
+      await api.mockAuthorize(orderId, mockOutcome);
+      const result = await api.checkout(orderId, "ONLINE");
       if (result.status === "PAID") {
         push(result.message || "Đặt hàng và Thanh toán thành công!", "success");
         setReloadKey((k) => k + 1);
@@ -136,47 +133,24 @@ export default function OrderDetailPage() {
           <Card>
             <h3>Thanh toán đơn hàng</h3>
             <p className="muted" style={{ marginBottom: 12 }}>
-              Đơn đang chờ thanh toán. Bạn có thể chọn phương thức và thử thanh toán lại tại đây.
+              Đơn đang chờ thanh toán online. Chọn kịch bản mock (nếu cần) rồi thử thanh toán lại.
             </p>
             {paymentError && <ErrorBanner message={paymentError} />}
-            <div className="payment-options" style={{ marginBottom: 12 }}>
-              <label className={`payment-option ${paymentMethod === "ONLINE" ? "selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="pm-retry"
-                  checked={paymentMethod === "ONLINE"}
-                  onChange={() => setPaymentMethod("ONLINE")}
-                />
-                <CreditCard size={20} />
-                <div>
-                  <strong>Thanh toán Online</strong>
-                  <p className="muted">Mock gateway (thiết lập kịch bản bên dưới)</p>
-                </div>
-              </label>
-              <label className={`payment-option ${paymentMethod === "COD" ? "selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="pm-retry"
-                  checked={paymentMethod === "COD"}
-                  onChange={() => setPaymentMethod("COD")}
-                />
-                <MapPin size={20} />
-                <div>
-                  <strong>Thanh toán khi nhận hàng (COD)</strong>
-                  <p className="muted">Trả tiền khi nhận sách</p>
-                </div>
-              </label>
-            </div>
-            {paymentMethod === "ONLINE" && (
-              <div className="form-group mock-section">
-                <label>Kịch bản thanh toán (Mock Gateway)</label>
-                <Select value={mockOutcome} onChange={(e) => setMockOutcome(e.target.value)}>
-                  <option value="SUCCESS">SUCCESS - Thành công</option>
-                  <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS - Không đủ số dư</option>
-                  <option value="MAINTENANCE">MAINTENANCE - Bảo trì</option>
-                </Select>
+            <div className="payment-single-online" style={{ marginBottom: 12 }}>
+              <CreditCard size={20} />
+              <div>
+                <strong>Thanh toán trực tuyến (Online)</strong>
+                <p className="muted">Chỉ hỗ trợ thanh toán qua cổng online.</p>
               </div>
-            )}
+            </div>
+            <div className="form-group mock-section">
+              <label>Kịch bản thanh toán (Mock Gateway)</label>
+              <Select value={mockOutcome} onChange={(e) => setMockOutcome(e.target.value)}>
+                <option value="SUCCESS">SUCCESS - Thành công</option>
+                <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS - Không đủ số dư</option>
+                <option value="MAINTENANCE">MAINTENANCE - Bảo trì</option>
+              </Select>
+            </div>
             <button type="button" className="btn btn-primary" disabled={paying} onClick={handleRetryPayment}>
               {paying ? (
                 <>

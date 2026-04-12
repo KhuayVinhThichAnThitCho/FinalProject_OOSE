@@ -33,7 +33,6 @@ export default function CheckoutPage() {
   const [receiverPhone, setReceiverPhone] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const shippingFee = STORE_SHIPPING_FEE;
-  const [paymentMethod, setPaymentMethod] = useState("ONLINE");
   const [mockOutcome, setMockOutcome] = useState("SUCCESS");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,11 +74,8 @@ export default function CheckoutPage() {
         shippingFee,
       });
 
-      if (paymentMethod === "ONLINE") {
-        await api.mockAuthorize(orderId, mockOutcome);
-      }
-
-      const result = await api.checkout(orderId, paymentMethod);
+      await api.mockAuthorize(orderId, mockOutcome);
+      const result = await api.checkout(orderId, "ONLINE");
 
       clearCart();
       if (result.status !== "PAID") {
@@ -150,35 +146,21 @@ export default function CheckoutPage() {
       {step === 2 && (
         <Card className="checkout-card">
           <h3>Phương thức thanh toán</h3>
-          <div className="payment-options">
-            <label className={`payment-option ${paymentMethod === "ONLINE" ? "selected" : ""}`}>
-              <input type="radio" name="pm" value="ONLINE" checked={paymentMethod === "ONLINE"} onChange={() => setPaymentMethod("ONLINE")} />
-              <CreditCard size={20} />
-              <div>
-                <strong>Thanh toán Online</strong>
-                <p className="muted">Thanh toán trực tuyến ngay lập tức</p>
-              </div>
-            </label>
-            <label className={`payment-option ${paymentMethod === "COD" ? "selected" : ""}`}>
-              <input type="radio" name="pm" value="COD" checked={paymentMethod === "COD"} onChange={() => setPaymentMethod("COD")} />
-              <MapPin size={20} />
-              <div>
-                <strong>Thanh toán khi nhận hàng (COD)</strong>
-                <p className="muted">Trả tiền khi nhận được sách</p>
-              </div>
-            </label>
-          </div>
-
-          {paymentMethod === "ONLINE" && (
-            <div className="form-group mock-section">
-              <label>Kịch bản thanh toán (Mock Gateway)</label>
-              <Select value={mockOutcome} onChange={(e) => setMockOutcome(e.target.value)}>
-                <option value="SUCCESS">SUCCESS - Thành công</option>
-                <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS - Không đủ số dư</option>
-                <option value="MAINTENANCE">MAINTENANCE - Bảo trì</option>
-              </Select>
+          <div className="payment-single-online">
+            <CreditCard size={20} />
+            <div>
+              <strong>Thanh toán trực tuyến (Online)</strong>
+              <p className="muted">Đơn hàng chỉ thanh toán qua cổng thanh toán online.</p>
             </div>
-          )}
+          </div>
+          <div className="form-group mock-section">
+            <label>Kịch bản thanh toán (Mock Gateway)</label>
+            <Select value={mockOutcome} onChange={(e) => setMockOutcome(e.target.value)}>
+              <option value="SUCCESS">SUCCESS - Thành công</option>
+              <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS - Không đủ số dư</option>
+              <option value="MAINTENANCE">MAINTENANCE - Bảo trì</option>
+            </Select>
+          </div>
 
           <div className="wizard-nav">
             <button className="btn" onClick={() => setStep(1)}>
@@ -215,7 +197,7 @@ export default function CheckoutPage() {
 
               <div className="review-section">
                 <h4>Thanh toán</h4>
-                <p>{paymentMethod === "ONLINE" ? "Thanh toán Online" : "Thanh toán khi nhận hàng"}</p>
+                <p>Thanh toán trực tuyến (Online)</p>
               </div>
             </Card>
           </div>

@@ -7,9 +7,10 @@ import { useState } from "react";
 export default function CancelQueuePage() {
   const [status, setStatus] = useState("");
   const { data, loading, error } = useLoad(() => api.staffCancelRequests(status || undefined), [status]);
+  const rows = Array.isArray(data) ? data : [];
   if (loading) return <div className="card">Đang tải yêu cầu hủy...</div>;
   if (error) return <ErrorBanner message={error} />;
-  if (!data || data.length === 0) return <EmptyState title="Không có yêu cầu hủy" desc="Queue hiện đang trống." />;
+  if (rows.length === 0) return <EmptyState title="Không có yêu cầu hủy" desc="Queue hiện đang trống." />;
 
   return (
     <div className="page">
@@ -27,7 +28,7 @@ export default function CancelQueuePage() {
       />
       <DataTable
         headers={["Request", "Order", "Lý do", "Trạng thái", "Chi tiết"]}
-        rows={data.map((r) => [
+        rows={rows.map((r) => [
           `#${r.id}`,
           `#${r.order?.id ?? "-"}`,
           r.reason,
