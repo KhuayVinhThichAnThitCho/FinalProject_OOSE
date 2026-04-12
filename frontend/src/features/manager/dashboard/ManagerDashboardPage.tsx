@@ -42,13 +42,15 @@ export default function ManagerDashboardPage() {
     <div className="page">
       <PageHeader title="Dashboard" subtitle="Tổng quan kinh doanh 30 ngày gần nhất" />
 
-      <Card style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 20 }}>
+        <Card>
         <h3 style={{ marginBottom: 8 }}>Chức năng quản lý</h3>
         <p className="muted" style={{ marginBottom: 12 }}>
           Cập nhật giá bán sách: xem danh sách, chọn sách, nhập giá mới và thời gian áp dụng.
         </p>
         <Link className="btn btn-primary" to="/manager/pricing">Cập nhật giá bán sách</Link>
-      </Card>
+        </Card>
+      </div>
 
       <div className="kpi-grid">
         <Card className="kpi-card">

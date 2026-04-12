@@ -1,20 +1,28 @@
 package com.example.bookstore.service;
 
+import com.example.bookstore.domain.entity.Book;
 import com.example.bookstore.domain.entity.Order;
 import com.example.bookstore.domain.entity.OrderDetail;
 import com.example.bookstore.domain.enums.OrderStatus;
+import com.example.bookstore.repository.BookRepository;
 import com.example.bookstore.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Image;
+import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfWriter;
 import org.apache.poi.ss.usermodel.Row;
@@ -25,14 +33,28 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ReportService {
 
     private final OrderRepository orderRepository;
+    private final BookRepository bookRepository;
 
-    public ReportService(OrderRepository orderRepository) {
+    public ReportService(OrderRepository orderRepository, BookRepository bookRepository) {
         this.orderRepository = orderRepository;
+        this.bookRepository = bookRepository;
     }
 
-    // Named like in sequence diagram
-    public SalesReportData generateReport(Instant from, Instant to, String category, String orderStatus) {
-        return buildSalesReport(from, to, category, orderStatus);
+    public ReportOptions showReportOptions() {
+        List<String> categories = bookRepository.findAllBooks().stream()
+                .map(Book::getCategory)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .sorted()
+                .toList();
+        List<String> orderStatuses = Arrays.stream(OrderStatus.values()).map(Enum::name).toList();
+        return new ReportOptions(orderStatuses, categories, OrderStatus.DELIVERED.name());
+    }
+
+    public SalesReportData generateReport(Instant fromDate, Instant toDate, String category, String orderStatus) {
+        return buildSalesReport(fromDate, toDate, category, orderStatus);
     }
 
     public SalesReportData buildSalesReport(Instant from, Instant to, String category, String status) {
@@ -43,14 +65,10 @@ public class ReportService {
         long totalOrders = orders.size();
         long totalRevenue = orders.stream().mapToLong(Order::getTotalAmount).sum();
 
-        // Compare to previous period (same length)
         Duration period = Duration.between(from, to);
         Instant prevTo = from;
         Instant prevFrom = from.minus(period);
-        long prevRevenue = orderRepository.findByOrderedAtBetween(prevFrom, prevTo).stream()
-                .filter(o -> o.getStatus() == OrderStatus.PAID)
-                .mapToLong(Order::getTotalAmount)
-                .sum();
+        long prevRevenue = sumRevenueInRange(prevFrom, prevTo, category, status);
         Double growthPercent = prevRevenue == 0 ? null : ((totalRevenue - prevRevenue) * 100.0) / prevRevenue;
 
         Map<Long, BookAgg> bookAgg = orders.stream()
@@ -75,23 +93,34 @@ public class ReportService {
         return new SalesReportData(from, to, totalOrders, totalRevenue, prevRevenue, growthPercent, totalBooksSold, topBooks, message);
     }
 
-    // Named like in sequence diagram
-    public List<Order> getSalesData(Instant from, Instant to, String category, String orderStatus) {
-        return orderRepository.findByOrderedAtBetween(from, to).stream()
-                .filter(o -> {
-                    if (orderStatus == null || orderStatus.isBlank()) {
-                        return o.getStatus() == OrderStatus.PAID;
-                    }
-                    return o.getStatus().name().equalsIgnoreCase(orderStatus);
-                })
-                .filter(o -> {
-                    if (category == null || category.isBlank()) {
-                        return true;
-                    }
-                    return o.getOrderDetails().stream()
-                            .anyMatch(i -> category.equalsIgnoreCase(i.getBook().getCategory()));
-                })
+    public List<Order> getSalesData(Instant fromDate, Instant toDate, String category, String orderStatus) {
+        return orderRepository.findByOrderedAtBetween(fromDate, toDate).stream()
+                .filter(o -> matchesSaleStatus(o, orderStatus))
+                .filter(o -> matchesCategory(o, category))
                 .toList();
+    }
+
+    private boolean matchesSaleStatus(Order o, String orderStatusFilter) {
+        if (orderStatusFilter == null || orderStatusFilter.isBlank()) {
+            return o.getStatus() == OrderStatus.DELIVERED;
+        }
+        return o.getStatus().name().equalsIgnoreCase(orderStatusFilter);
+    }
+
+    private boolean matchesCategory(Order o, String category) {
+        if (category == null || category.isBlank()) {
+            return true;
+        }
+        return o.getOrderDetails().stream()
+                .anyMatch(i -> category.equalsIgnoreCase(i.getBook().getCategory()));
+    }
+
+    private long sumRevenueInRange(Instant from, Instant to, String category, String status) {
+        return orderRepository.findByOrderedAtBetween(from, to).stream()
+                .filter(o -> matchesSaleStatus(o, status))
+                .filter(o -> matchesCategory(o, category))
+                .mapToLong(Order::getTotalAmount)
+                .sum();
     }
 
     public byte[] exportXlsx(SalesReportData data) {
@@ -151,29 +180,48 @@ public class ReportService {
     public byte[] exportPdf(SalesReportData data) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            Document doc = new Document();
+            Document doc = new Document(PageSize.A4, 40, 40, 48, 48);
             PdfWriter.getInstance(doc, out);
             doc.open();
-            doc.add(new Paragraph("Sales report"));
-            doc.add(new Paragraph("From: " + data.from()));
-            doc.add(new Paragraph("To: " + data.to()));
-            doc.add(new Paragraph("Total orders: " + data.totalOrders()));
-            doc.add(new Paragraph("Total revenue: " + data.totalRevenue()));
-            doc.add(new Paragraph("Prev revenue: " + data.prevRevenue()));
-            doc.add(new Paragraph("Growth percent: " + (data.growthPercent() == null ? "N/A" : data.growthPercent())));
-            doc.add(new Paragraph("Total books sold: " + data.totalBooksSold()));
+            doc.add(new Paragraph("Báo cáo bán hàng"));
+            doc.add(new Paragraph("Từ: " + data.from()));
+            doc.add(new Paragraph("Đến: " + data.to()));
+            doc.add(new Paragraph("Tổng đơn: " + data.totalOrders()));
+            doc.add(new Paragraph("Tổng doanh thu (kỳ này): " + data.totalRevenue()));
+            doc.add(new Paragraph("Doanh thu kỳ trước: " + data.prevRevenue()));
+            doc.add(new Paragraph("Tăng trưởng %: " + (data.growthPercent() == null ? "N/A" : data.growthPercent())));
+            doc.add(new Paragraph("Tổng sách đã bán (cuốn): " + data.totalBooksSold()));
             if (data.message() != null) {
-                doc.add(new Paragraph("Message: " + data.message()));
+                doc.add(new Paragraph("Thông báo: " + data.message()));
             }
-            doc.add(new Paragraph("Top books:"));
+            doc.add(new Paragraph("Chi tiết top sách:"));
             for (BookAgg b : data.topBooks()) {
                 doc.add(new Paragraph("- " + b.title() + " (" + b.bookId() + "): " + b.quantitySold()));
             }
+
+            if (data.totalOrders() > 0 && ReportPdfChartHelper.hasChartableBooks(data.topBooks())) {
+                doc.add(new Paragraph(" "));
+                doc.add(new Paragraph("Biểu đồ (PNG nhúng trong PDF):"));
+                addPdfChartImage(doc, ReportPdfChartHelper.topBooksBarPng(data));
+                doc.add(new Paragraph(" "));
+                addPdfChartImage(doc, ReportPdfChartHelper.revenueCompareBarPng(data));
+                doc.add(new Paragraph(" "));
+                addPdfChartImage(doc, ReportPdfChartHelper.categoryShareRingPng(data));
+            }
+
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
             throw new IllegalStateException("Trích xuất file thất bại. Vui lòng chia nhỏ khoảng thời gian hoặc thử lại sau");
         }
+    }
+
+    private static void addPdfChartImage(Document doc, byte[] pngBytes) throws DocumentException, IOException {
+        Image img = Image.getInstance(pngBytes);
+        float maxW = doc.getPageSize().getWidth() - doc.leftMargin() - doc.rightMargin();
+        float maxH = 220f;
+        img.scaleToFit(maxW, maxH);
+        doc.add(img);
     }
 
     private void validateRange(Instant from, Instant to) {
@@ -211,6 +259,9 @@ public class ReportService {
     }
 
     public record BookAgg(Long bookId, String title, String category, long quantitySold) {
+    }
+
+    public record ReportOptions(List<String> orderStatuses, List<String> categories, String defaultOrderStatus) {
     }
 }
 

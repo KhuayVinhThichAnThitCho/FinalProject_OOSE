@@ -241,7 +241,6 @@ public class Order extends AuditableEntity {
         this.status = OrderStatus.SHIPPING;
     }
 
-    /** Nhân viên / quản lý xác nhận khách đã nhận hàng (SHIPPING → DELIVERED). */
     public void markDelivered() {
         if (this.status != OrderStatus.SHIPPING) {
             throw new IllegalStateException("Chỉ đơn đang giao hàng (SHIPPING) mới có thể xác nhận đã giao thành công.");

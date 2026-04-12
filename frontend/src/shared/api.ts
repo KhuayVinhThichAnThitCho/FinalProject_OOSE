@@ -11,6 +11,7 @@ import type {
   OrderSummary,
   PricingResult,
   SalesReportData,
+  ReportOptions,
   IdLike,
 } from "./types";
 
@@ -105,9 +106,13 @@ export const api = {
     const { data } = await apiClient.put<PricingResult>(`/api/manager/books/${id}/price`, payload);
     return data;
   },
-  salesReport: async (from: string, to: string, category?: string, status?: string) => {
+  reportOptions: async () => {
+    const { data } = await apiClient.get<ReportOptions>("/api/reports/sales/options");
+    return data;
+  },
+  salesReport: async (fromDate: string, toDate: string, category?: string, orderStatus?: string) => {
     const { data } = await apiClient.get<SalesReportData>("/api/reports/sales", {
-      params: { from, to, category, status },
+      params: { fromDate, toDate, category, orderStatus },
     });
     return data;
   },
@@ -118,9 +123,15 @@ export const api = {
     );
     return data;
   },
-  exportReport: async (format: "xlsx" | "pdf", from: string, to: string, category?: string, status?: string) => {
+  exportReport: async (
+    fileFormat: "xlsx" | "pdf",
+    fromDate: string,
+    toDate: string,
+    category?: string,
+    orderStatus?: string,
+  ) => {
     const response = await apiClient.get(`/api/reports/sales/export`, {
-      params: { from, to, format, category, status },
+      params: { fromDate, toDate, fileFormat, category, orderStatus },
       responseType: "blob",
     });
     return response.data as Blob;

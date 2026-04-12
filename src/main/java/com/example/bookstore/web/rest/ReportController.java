@@ -23,27 +23,33 @@ public class ReportController {
         this.reportService = reportService;
     }
 
+    @GetMapping("/sales/options")
+    public ReportService.ReportOptions showReportOptions() {
+        return reportService.showReportOptions();
+    }
+
     @GetMapping("/sales")
     public ReportService.SalesReportData viewSalesReport(
-            @RequestParam("from") String from,
-            @RequestParam("to") String to,
+            @RequestParam("fromDate") String fromDate,
+            @RequestParam("toDate") String toDate,
             @RequestParam(value = "category", required = false) String category,
-            @RequestParam(value = "status", required = false) String status
+            @RequestParam(value = "orderStatus", required = false) String orderStatus
     ) {
-        return reportService.generateReport(Instant.parse(from), Instant.parse(to), category, status);
+        return reportService.generateReport(Instant.parse(fromDate), Instant.parse(toDate), category, orderStatus);
     }
 
     @GetMapping("/sales/export")
     public ResponseEntity<byte[]> exportReportFile(
-            @RequestParam("from") String from,
-            @RequestParam("to") String to,
-            @RequestParam("format") String format,
+            @RequestParam("fromDate") String fromDate,
+            @RequestParam("toDate") String toDate,
+            @RequestParam("fileFormat") String fileFormat,
             @RequestParam(value = "category", required = false) String category,
-            @RequestParam(value = "status", required = false) String status
+            @RequestParam(value = "orderStatus", required = false) String orderStatus
     ) {
-        ReportService.SalesReportData data = reportService.generateReport(Instant.parse(from), Instant.parse(to), category, status);
+        ReportService.SalesReportData data = reportService.generateReport(
+                Instant.parse(fromDate), Instant.parse(toDate), category, orderStatus);
 
-        String f = format == null ? "" : format.toLowerCase();
+        String f = fileFormat == null ? "" : fileFormat.toLowerCase();
         byte[] bytes = reportService.generateFile(data, f);
 
         if (f.equals("xlsx")) {

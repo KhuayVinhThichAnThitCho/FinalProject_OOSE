@@ -35,6 +35,7 @@ D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\Payment
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\PaymentResult.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\PaymentResultStatus.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\PricingService.java
+D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\ReportPdfChartHelper.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\service\ReportService.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CancelRequestCreate.java
 D:\project\FinalProject_OOSE\src\main\java\com\example\bookstore\web\dto\CancelRequestDetailResponse.java

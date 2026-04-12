@@ -110,3 +110,10 @@ export type SalesReportData = {
   topBooks: ReportBookAgg[];
   message: string | null;
 };
+
+/** Khớp `GET /api/reports/sales/options` (showReportOptions). */
+export type ReportOptions = {
+  orderStatuses: string[];
+  categories: string[];
+  defaultOrderStatus: string;
+};
