@@ -1,26 +1,75 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../../shared/api";
 import { useLoad } from "../../../shared/hooks/useLoad";
 import { mapOrderSummaryVM } from "../../../entities/order/mappers";
 import { Card, DataTable, EmptyState, ErrorBanner, PageHeader, StatusBadge, ConfirmDialog } from "../../../shared/ui/components";
 import { useToast } from "../../../shared/ui/toast";
 import { getErrorMessage } from "../../../shared/lib/error";
-import { Truck, Eye } from "lucide-react";
+import { Truck, Eye, PackageCheck } from "lucide-react";
 import type { IdLike } from "../../../shared/types";
 
-export default function OrderQueuePage() {
-  const { data, loading, error, setData } = useLoad(api.staffPendingOrders, []);
-  const { push } = useToast();
-  const [confirmId, setConfirmId] = useState<IdLike | null>(null);
+type Tab = "pending" | "shipping";
 
-  if (loading) return <Card>Đang tải hàng đợi...</Card>;
+export default function OrderQueuePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: Tab = searchParams.get("tab") === "shipping" ? "shipping" : "pending";
+  const setTab = (t: Tab) => {
+    if (t === "pending") setSearchParams({});
+    else setSearchParams({ tab: "shipping" });
+  };
+
+  const loader = tab === "pending" ? api.staffPendingOrders : api.staffShippingOrders;
+  const { data, loading, error, setData } = useLoad(loader, [tab]);
+  const { push } = useToast();
+  const [confirmShipId, setConfirmShipId] = useState<IdLike | null>(null);
+  const [confirmDeliverId, setConfirmDeliverId] = useState<IdLike | null>(null);
+
+  if (loading) return <Card>Đang tải đơn hàng...</Card>;
   if (error) return <ErrorBanner message={error} />;
-  if (!data || data.length === 0) return <EmptyState title="Hàng đợi trống" desc="Hiện chưa có đơn cần xử lý." />;
+
+  const emptyTitle = tab === "pending" ? "Hàng đợi trống" : "Không có đơn đang giao";
+  const emptyDesc =
+    tab === "pending"
+      ? "Hiện chưa có đơn chờ xác nhận giao hàng."
+      : "Chưa có đơn ở trạng thái đang giao (SHIPPING).";
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="page">
+        <div className="staff-order-tabs">
+          <button type="button" className={`tab-btn ${tab === "pending" ? "active" : ""}`} onClick={() => setTab("pending")}>
+            Chờ xác nhận giao
+          </button>
+          <button type="button" className={`tab-btn ${tab === "shipping" ? "active" : ""}`} onClick={() => setTab("shipping")}>
+            Đang giao hàng
+          </button>
+        </div>
+        <EmptyState title={emptyTitle} desc={emptyDesc} />
+      </div>
+    );
+  }
 
   return (
     <div className="page">
-      <PageHeader title="Đơn hàng chờ xử lý" subtitle={`${data.length} đơn đang chờ xác nhận giao hàng`} />
+      <div className="staff-order-tabs">
+        <button type="button" className={`tab-btn ${tab === "pending" ? "active" : ""}`} onClick={() => setTab("pending")}>
+          Chờ xác nhận giao
+        </button>
+        <button type="button" className={`tab-btn ${tab === "shipping" ? "active" : ""}`} onClick={() => setTab("shipping")}>
+          Đang giao hàng
+        </button>
+      </div>
+
+      <PageHeader
+        title={tab === "pending" ? "Đơn hàng chờ xử lý" : "Đơn đang giao hàng"}
+        subtitle={
+          tab === "pending"
+            ? `${data.length} đơn đang chờ xác nhận giao hàng (PAID)`
+            : `${data.length} đơn đang giao — xác nhận khi khách đã nhận hàng`
+        }
+      />
+
       <DataTable
         headers={["Mã đơn", "Ngày đặt", "Tổng tiền", "Trạng thái", "Thao tác"]}
         rows={data.map((o) => {
@@ -29,35 +78,59 @@ export default function OrderQueuePage() {
             String(vm.id),
             vm.dateText,
             vm.totalText,
-            <StatusBadge status={vm.status} />,
-            <div className="row">
+            <StatusBadge key="s" status={vm.status} />,
+            <div key="a" className="row">
               <Link to={`/staff/orders/${vm.id}`} className="btn btn-sm">
                 <Eye size={14} /> Chi tiết
               </Link>
-              <button className="btn btn-primary btn-sm" onClick={() => setConfirmId(vm.id)}>
-                <Truck size={14} /> Xác nhận
-              </button>
+              {tab === "pending" ? (
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => setConfirmShipId(vm.id)}>
+                  <Truck size={14} /> Xác nhận giao
+                </button>
+              ) : (
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => setConfirmDeliverId(vm.id)}>
+                  <PackageCheck size={14} /> Đã giao
+                </button>
+              )}
             </div>,
           ];
         })}
       />
 
       <ConfirmDialog
-        open={confirmId !== null}
+        open={confirmShipId !== null}
         title="Xác nhận giao hàng?"
         body={<p>Đơn hàng sẽ chuyển sang trạng thái SHIPPING.</p>}
-        onClose={() => setConfirmId(null)}
+        onClose={() => setConfirmShipId(null)}
         onConfirm={async () => {
-          if (!confirmId) return;
+          if (!confirmShipId) return;
           try {
-            const msg = await api.staffConfirmOrder(confirmId);
+            const msg = await api.staffConfirmOrder(confirmShipId);
             push(msg, "success");
-            const refreshed = await api.staffPendingOrders();
-            setData(refreshed);
+            setData(await api.staffPendingOrders());
           } catch (e) {
             push(getErrorMessage(e, "Xác nhận đơn thất bại"), "error");
           } finally {
-            setConfirmId(null);
+            setConfirmShipId(null);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmDeliverId !== null}
+        title="Xác nhận đã giao thành công?"
+        body={<p>Đơn hàng sẽ chuyển sang trạng thái DELIVERED. Chỉ xác nhận khi khách đã nhận được hàng.</p>}
+        onClose={() => setConfirmDeliverId(null)}
+        onConfirm={async () => {
+          if (!confirmDeliverId) return;
+          try {
+            const msg = await api.staffMarkDelivered(confirmDeliverId);
+            push(msg, "success");
+            setData(await api.staffShippingOrders());
+          } catch (e) {
+            push(getErrorMessage(e, "Cập nhật trạng thái thất bại"), "error");
+          } finally {
+            setConfirmDeliverId(null);
           }
         }}
       />

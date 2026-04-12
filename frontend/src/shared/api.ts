@@ -55,6 +55,10 @@ export const api = {
     const { data } = await apiClient.get<OrderSummary[]>("/api/staff/orders/pending");
     return data;
   },
+  staffShippingOrders: async () => {
+    const { data } = await apiClient.get<OrderSummary[]>("/api/staff/orders/shipping");
+    return data;
+  },
   staffOrderDetail: async (orderId: IdLike) => {
     const { data } = await apiClient.get<OrderDetail>(`/api/staff/orders/${orderId}`);
     return data;
@@ -63,7 +67,10 @@ export const api = {
     const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/confirm`);
     return data;
   },
- 
+  staffMarkDelivered: async (orderId: IdLike) => {
+    const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/deliver`);
+    return data;
+  },
   staffCancelOrderConfirmation: async (orderId: IdLike) => {
     const { data } = await apiClient.post<string>(`/api/staff/orders/${orderId}/cancel-processing`);
     return data;

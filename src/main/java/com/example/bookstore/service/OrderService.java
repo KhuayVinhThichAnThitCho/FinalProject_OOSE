@@ -184,6 +184,15 @@ public class OrderService {
         return startShipping(orderId);
     }
 
+    @Transactional
+    public CheckoutResult confirmDelivered(Long orderId) {
+        Order o = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin đơn hàng."));
+        o.markDelivered();
+        orderRepository.save(o);
+        return new CheckoutResult(o.getId(), o.getStatus(), "Đã xác nhận giao hàng thành công.");
+    }
+
     public record ItemRequest(Long bookId, Integer quantity) {}
 
     public record ShippingInfo(String receiverName, String receiverPhone, String address) {}

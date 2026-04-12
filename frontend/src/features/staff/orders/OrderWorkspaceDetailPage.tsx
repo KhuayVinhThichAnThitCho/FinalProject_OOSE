@@ -7,7 +7,7 @@ import { Card, EmptyState, ErrorBanner, StatusBadge, DataTable, ConfirmDialog } 
 import { useToast } from "../../../shared/ui/toast";
 import { getErrorMessage } from "../../../shared/lib/error";
 import { formatCurrency } from "../../../shared/lib/format";
-import { ArrowLeft, Truck, Ban } from "lucide-react";
+import { ArrowLeft, Truck, Ban, PackageCheck } from "lucide-react";
 
 export default function OrderWorkspaceDetailPage() {
   const { id } = useParams();
@@ -16,6 +16,7 @@ export default function OrderWorkspaceDetailPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const { data, loading, error } = useLoad(() => api.staffOrderDetail(orderId), [orderId, reloadKey]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deliverOpen, setDeliverOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const { push } = useToast();
 
@@ -24,12 +25,15 @@ export default function OrderWorkspaceDetailPage() {
   if (!data) return <EmptyState title="Không có dữ liệu" desc="Không tìm thấy đơn hàng." />;
   const vm = mapOrderDetailVM(data);
 
-  const canConfirm = vm.status.toUpperCase() === "PAID";
+  const st = vm.status.toUpperCase();
+  const canConfirm = st === "PAID";
+  const canMarkDelivered = st === "SHIPPING";
+  const ordersListHref = canMarkDelivered ? "/staff/orders?tab=shipping" : "/staff/orders";
 
   return (
     <div className="page">
-      <Link to="/staff/orders" className="back-link">
-        <ArrowLeft size={16} /> Quay lại hàng đợi
+      <Link to={ordersListHref} className="back-link">
+        <ArrowLeft size={16} /> Quay lại danh sách đơn
       </Link>
 
       <div className="page-header">
@@ -48,6 +52,11 @@ export default function OrderWorkspaceDetailPage() {
                 <Truck size={16} /> Xác nhận giao hàng
               </button>
             </>
+          )}
+          {canMarkDelivered && (
+            <button type="button" className="btn btn-primary" onClick={() => setDeliverOpen(true)}>
+              <PackageCheck size={16} /> Xác nhận đã giao thành công
+            </button>
           )}
         </div>
       </div>
@@ -98,6 +107,24 @@ export default function OrderWorkspaceDetailPage() {
             push(getErrorMessage(e, "Xác nhận thất bại"), "error");
           } finally {
             setConfirmOpen(false);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={deliverOpen}
+        title="Xác nhận đã giao thành công?"
+        body={<p>Đơn sẽ chuyển sang <strong>DELIVERED</strong>. Chỉ thực hiện khi khách đã nhận được hàng.</p>}
+        onClose={() => setDeliverOpen(false)}
+        onConfirm={async () => {
+          try {
+            const msg = await api.staffMarkDelivered(vm.id);
+            push(msg, "success");
+            setReloadKey((k) => k + 1);
+          } catch (e) {
+            push(getErrorMessage(e, "Cập nhật trạng thái thất bại"), "error");
+          } finally {
+            setDeliverOpen(false);
           }
         }}
       />

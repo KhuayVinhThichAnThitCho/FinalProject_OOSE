@@ -75,5 +75,24 @@ class OrderServiceTest {
         assertThat(bookRepository.findById(bookId).orElseThrow().getStockQuantity()).isEqualTo(8);
         assertThat(orderRepository.findById(res.orderId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);
     }
+
+    @Test
+    void confirmDelivered_setsDelivered_afterShipping() {
+        Long orderId = orderService.makeNewOrder(customerId).orderId();
+        orderService.confirmOrder(
+                orderId,
+                List.of(new OrderService.ItemRequest(bookId, 1)),
+                new OrderService.ShippingInfo("A", "090", "Addr"),
+                0L
+        );
+        orderService.checkout(orderId, "ONLINE_OK", "customer");
+        orderService.confirmOrder(orderId);
+
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.SHIPPING);
+
+        OrderService.CheckoutResult delivered = orderService.confirmDelivered(orderId);
+        assertThat(delivered.orderStatus()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.DELIVERED);
+    }
 }
 

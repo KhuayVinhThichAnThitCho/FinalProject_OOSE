@@ -32,6 +32,13 @@ public class StaffOrderController {
                 .toList();
     }
 
+    @GetMapping("/shipping")
+    public List<OrderSummaryResponse> viewShippingOrders() {
+        return orderRepository.findByStatus(OrderStatus.SHIPPING).stream()
+                .map(o -> new OrderSummaryResponse(o.getId(), o.getOrderedAt(), o.getTotalAmount(), o.getStatus()))
+                .toList();
+    }
+
     @GetMapping("/{id}")
     public OrderDetailView viewOrderDetail(@PathVariable("id") Long orderId) {
         Order o = orderRepository.findById(orderId)
@@ -67,6 +74,11 @@ public class StaffOrderController {
     @PostMapping("/{id}/confirm")
     public String confirmOrder(@PathVariable("id") Long orderId) {
         return orderService.confirmOrder(orderId).message();
+    }
+
+    @PostMapping("/{id}/deliver")
+    public String confirmDelivered(@PathVariable("id") Long orderId) {
+        return orderService.confirmDelivered(orderId).message();
     }
 
     @PostMapping("/{id}/cancel-processing")
