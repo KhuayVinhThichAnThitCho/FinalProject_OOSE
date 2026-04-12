@@ -87,12 +87,16 @@ export function ConfirmDialog({
   body,
   onClose,
   onConfirm,
+  confirmLabel = "Xác nhận",
+  cancelLabel = "Hủy",
 }: {
   open: boolean;
   title: string;
   body?: ReactNode;
   onClose: () => void;
   onConfirm: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
 }) {
   if (!open) return null;
   return (
@@ -101,9 +105,9 @@ export function ConfirmDialog({
         <h3>{title}</h3>
         {body ? <div className="dialog-body">{body}</div> : null}
         <div className="dialog-actions">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button className="btn-primary" onClick={onConfirm}>
-            Confirm
+          <Button type="button" onClick={onClose}>{cancelLabel}</Button>
+          <Button type="button" className="btn-primary" onClick={onConfirm}>
+            {confirmLabel}
           </Button>
         </div>
       </div>

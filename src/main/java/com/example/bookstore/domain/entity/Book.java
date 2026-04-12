@@ -95,7 +95,7 @@ public class Book extends AuditableEntity {
 
     public PriceValidation validatePriceUpdate(Long newPrice, boolean allowLossSale) {
         if (newPrice == null || newPrice <= 0) {
-            throw new IllegalArgumentException("Giá bán không hợp lệ");
+            throw new IllegalArgumentException("Giá bán phải là số nguyên dương lớn hơn 0.");
         }
         if (newPrice < costPrice && !allowLossSale) {
             return new PriceValidation(false,

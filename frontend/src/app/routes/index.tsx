@@ -22,6 +22,7 @@ const CancelDetailPage = lazy(() => import("../../features/staff/cancellations/C
 
 const ManagerDashboardPage = lazy(() => import("../../features/manager/dashboard/ManagerDashboardPage"));
 const PricingCenterPage = lazy(() => import("../../features/manager/pricing/PricingCenterPage"));
+const BookPricingDetailPage = lazy(() => import("../../features/manager/pricing/BookPricingDetailPage"));
 const ReportCenterPage = lazy(() => import("../../features/manager/reports/ReportCenterPage"));
 
 function RoleHome() {
@@ -86,6 +87,7 @@ export const router = createBrowserRouter([
             element: <AdminShell />,
             children: [
               { path: "dashboard", element: S(<ManagerDashboardPage />) },
+              { path: "pricing/:bookId", element: S(<BookPricingDetailPage />) },
               { path: "pricing", element: S(<PricingCenterPage />) },
               { path: "reports", element: S(<ReportCenterPage />) },
               { index: true, element: <Navigate to="dashboard" replace /> },

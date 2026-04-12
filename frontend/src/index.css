@@ -183,6 +183,13 @@ hr{border:none;border-top:1px solid #ebedf3;margin:12px 0}
 .payment-option strong{display:block;font-size:14px}
 .payment-single-online{display:flex;align-items:flex-start;gap:12px;padding:16px;border:2px solid var(--brand);border-radius:var(--radius);background:var(--brand-light);margin-bottom:16px}
 .payment-single-online strong{display:block;font-size:14px}
+.manager-pricing-detail .pricing-detail-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f1f5}
+.manager-pricing-detail .pricing-detail-row:last-of-type{border-bottom:none}
+.confirm-pricing-body p{margin:6px 0}
+.form-field-error{color:#b91c1c;font-size:13px;margin-top:6px;line-height:1.35}
+.form-group.has-field-error .input{border-color:#b91c1c;box-shadow:0 0 0 1px rgba(185,28,28,.15)}
+.pricing-form-actions{flex-wrap:wrap;margin-top:8px;gap:10px}
+.pricing-loss-warning{color:#b91c1c;font-weight:600;font-size:15px;line-height:1.45;padding:12px 14px;border:1px solid #fecaca;border-radius:10px;background:#fef2f2}
 .mock-section{background:#fffbeb;padding:12px;border-radius:10px;border:1px solid #fde68a}
 
 .review-layout{display:grid;grid-template-columns:1fr 340px;gap:20px}

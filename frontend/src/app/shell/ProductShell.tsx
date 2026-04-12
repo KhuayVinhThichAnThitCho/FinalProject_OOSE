@@ -10,7 +10,7 @@ const navItems: Item[] = [
   { to: "/staff/orders", label: "Đơn hàng chờ", roles: ["STAFF", "MANAGER"], icon: <Package size={16} /> },
   { to: "/staff/cancellations", label: "Yêu cầu hủy", roles: ["STAFF", "MANAGER"], icon: <UserCog size={16} /> },
   { to: "/manager/dashboard", label: "Dashboard", roles: ["MANAGER"], icon: <LayoutDashboard size={16} /> },
-  { to: "/manager/pricing", label: "Quản lý giá", roles: ["MANAGER"], icon: <DollarSign size={16} /> },
+  { to: "/manager/pricing", label: "Cập nhật giá bán sách", roles: ["MANAGER"], icon: <DollarSign size={16} /> },
   { to: "/manager/reports", label: "Báo cáo", roles: ["MANAGER"], icon: <BarChart3 size={16} /> },
 ];
 

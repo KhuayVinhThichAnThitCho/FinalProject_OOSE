@@ -4,6 +4,7 @@ import { api } from "../../../shared/api";
 import { useLoad } from "../../../shared/hooks/useLoad";
 import { Card, ErrorBanner, PageHeader } from "../../../shared/ui/components";
 import { formatCurrency } from "../../../shared/lib/format";
+import { Link } from "react-router-dom";
 import { TrendingUp, ShoppingCart, BookOpen, DollarSign } from "lucide-react";
 
 const INITIAL_NOW = new Date().toISOString();
@@ -40,6 +41,14 @@ export default function ManagerDashboardPage() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" subtitle="Tổng quan kinh doanh 30 ngày gần nhất" />
+
+      <Card style={{ marginBottom: 20 }}>
+        <h3 style={{ marginBottom: 8 }}>Chức năng quản lý</h3>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Cập nhật giá bán sách: xem danh sách, chọn sách, nhập giá mới và thời gian áp dụng.
+        </p>
+        <Link className="btn btn-primary" to="/manager/pricing">Cập nhật giá bán sách</Link>
+      </Card>
 
       <div className="kpi-grid">
         <Card className="kpi-card">
