@@ -45,7 +45,7 @@ export default function CancelDetailPage() {
 
       <div className="grid two">
         <Card>
-          <h3>Đơn hàng #{String(od.orderId).slice(-8)}</h3>
+          <h3 className="order-heading-id">Đơn hàng #{String(od.orderId)}</h3>
           <div className="row" style={{ marginBottom: 8 }}>
             <StatusBadge status={od.status} />
             <span className="muted">{formatDateTime(od.ngayDat)}</span>

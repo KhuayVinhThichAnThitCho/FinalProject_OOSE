@@ -119,7 +119,11 @@ public class OrderService {
 
                 orderRepository.save(order);
                 paymentRepository.save(payment);
-                return new CheckoutResult(order.getId(), order.getStatus(), "Đặt hàng và Thanh toán thành công");
+                return new CheckoutResult(
+                        order.getId(),
+                        order.getStatus(),
+                        "Đặt hàng và Thanh toán thành công. Mã đơn hàng: " + order.getId()
+                );
             }
             case INSUFFICIENT_FUNDS -> {
                 order.markPaymentFailed();

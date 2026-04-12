@@ -4,11 +4,11 @@ import { api } from "../../../shared/api";
 import { useAuthStore } from "../../auth/authStore";
 import { useLoad } from "../../../shared/hooks/useLoad";
 import { mapOrderDetailVM } from "../../../entities/order/mappers";
-import { Card, EmptyState, ErrorBanner, StatusBadge, ConfirmDialog, Input, DataTable } from "../../../shared/ui/components";
+import { Card, EmptyState, ErrorBanner, StatusBadge, ConfirmDialog, Input, DataTable, Select } from "../../../shared/ui/components";
 import { useToast } from "../../../shared/ui/toast";
 import { getErrorMessage } from "../../../shared/lib/error";
 import { formatCurrency } from "../../../shared/lib/format";
-import { ArrowLeft, XCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2, MapPin, XCircle } from "lucide-react";
 
 const TIMELINE = ["PENDING", "PROCESSING", "PAID", "SHIPPING", "DELIVERED"];
 
@@ -45,6 +45,10 @@ export default function OrderDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("ONLINE");
+  const [mockOutcome, setMockOutcome] = useState("SUCCESS");
+  const [paying, setPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const { push } = useToast();
 
   if (loading) return <div className="skeleton-card" style={{ height: 200 }} />;
@@ -53,6 +57,33 @@ export default function OrderDetailPage() {
 
   const vm = mapOrderDetailVM(data);
   const canCancel = !["SHIPPING", "DELIVERED", "CANCELLED"].includes(vm.status.toUpperCase());
+  const st = vm.status.toUpperCase();
+  const canRetryPayment =
+    vm.items.length > 0 && (st === "PENDING" || st === "PROCESSING");
+
+  const handleRetryPayment = async () => {
+    setPaymentError(null);
+    setPaying(true);
+    try {
+      if (paymentMethod === "ONLINE") {
+        await api.mockAuthorize(orderId, mockOutcome);
+      }
+      const result = await api.checkout(orderId, paymentMethod);
+      if (result.status === "PAID") {
+        push(result.message || "Đặt hàng và Thanh toán thành công!", "success");
+        setReloadKey((k) => k + 1);
+      } else {
+        push(result.message || "Thanh toán chưa thành công.", "error");
+        setReloadKey((k) => k + 1);
+      }
+    } catch (e) {
+      const msg = getErrorMessage(e, "Thanh toán thất bại. Vui lòng thử lại.");
+      setPaymentError(msg);
+      push(msg, "error");
+    } finally {
+      setPaying(false);
+    }
+  };
 
   return (
     <div className="order-detail-page">
@@ -62,7 +93,7 @@ export default function OrderDetailPage() {
 
       <div className="order-detail-header">
         <div>
-          <h2>Đơn hàng #{String(vm.id).slice(-8)}</h2>
+          <h2 className="order-heading-id">Đơn hàng #{String(vm.id)}</h2>
           <p className="muted">{vm.dateText}</p>
         </div>
         <StatusBadge status={vm.status} />
@@ -100,6 +131,63 @@ export default function OrderDetailPage() {
             <p className="muted">Chưa có thông tin giao hàng</p>
           )}
         </Card>
+
+        {canRetryPayment && (
+          <Card>
+            <h3>Thanh toán đơn hàng</h3>
+            <p className="muted" style={{ marginBottom: 12 }}>
+              Đơn đang chờ thanh toán. Bạn có thể chọn phương thức và thử thanh toán lại tại đây.
+            </p>
+            {paymentError && <ErrorBanner message={paymentError} />}
+            <div className="payment-options" style={{ marginBottom: 12 }}>
+              <label className={`payment-option ${paymentMethod === "ONLINE" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="pm-retry"
+                  checked={paymentMethod === "ONLINE"}
+                  onChange={() => setPaymentMethod("ONLINE")}
+                />
+                <CreditCard size={20} />
+                <div>
+                  <strong>Thanh toán Online</strong>
+                  <p className="muted">Mock gateway (thiết lập kịch bản bên dưới)</p>
+                </div>
+              </label>
+              <label className={`payment-option ${paymentMethod === "COD" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="pm-retry"
+                  checked={paymentMethod === "COD"}
+                  onChange={() => setPaymentMethod("COD")}
+                />
+                <MapPin size={20} />
+                <div>
+                  <strong>Thanh toán khi nhận hàng (COD)</strong>
+                  <p className="muted">Trả tiền khi nhận sách</p>
+                </div>
+              </label>
+            </div>
+            {paymentMethod === "ONLINE" && (
+              <div className="form-group mock-section">
+                <label>Kịch bản thanh toán (Mock Gateway)</label>
+                <Select value={mockOutcome} onChange={(e) => setMockOutcome(e.target.value)}>
+                  <option value="SUCCESS">SUCCESS - Thành công</option>
+                  <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS - Không đủ số dư</option>
+                  <option value="MAINTENANCE">MAINTENANCE - Bảo trì</option>
+                </Select>
+              </div>
+            )}
+            <button type="button" className="btn btn-primary" disabled={paying} onClick={handleRetryPayment}>
+              {paying ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Đang xử lý...
+                </>
+              ) : (
+                "Thanh toán"
+              )}
+            </button>
+          </Card>
+        )}
 
         {canCancel && (
           <Card>

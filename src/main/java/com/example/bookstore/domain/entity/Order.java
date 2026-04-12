@@ -203,6 +203,10 @@ public class Order extends AuditableEntity {
     }
 
     public boolean isPayable() {
+        boolean hasLines = orderDetails != null && !orderDetails.isEmpty();
+        if (!hasLines) {
+            return false;
+        }
         return status == OrderStatus.PENDING || status == OrderStatus.PROCESSING;
     }
 
@@ -211,7 +215,7 @@ public class Order extends AuditableEntity {
     }
 
     public void markPaymentFailed() {
-        this.status = OrderStatus.PENDING;
+        this.status = OrderStatus.PROCESSING;
     }
 
     public void cancel() {

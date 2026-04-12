@@ -32,7 +32,7 @@ export default function OrderWorkspaceDetailPage() {
 
       <div className="page-header">
         <div>
-          <h2>Đơn hàng #{String(vm.id).slice(-8)}</h2>
+          <h2 className="order-heading-id">Đơn hàng #{String(vm.id)}</h2>
           <p className="muted">{vm.dateText}</p>
         </div>
         <div className="row">

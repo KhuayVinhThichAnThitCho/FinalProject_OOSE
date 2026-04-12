@@ -7,9 +7,12 @@ import { useToast } from "../../../shared/ui/toast";
 import { getErrorMessage } from "../../../shared/lib/error";
 import { formatCurrency } from "../../../shared/lib/format";
 import { Card, Input, Select, ErrorBanner } from "../../../shared/ui/components";
-import { ChevronLeft, ChevronRight, Loader2, CheckCircle2, MapPin, CreditCard, ClipboardList } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, CheckCircle2, MapPin, CreditCard, ClipboardList, XCircle } from "lucide-react";
 
 type Step = 1 | 2 | 3;
+
+/** Phí ship cố định theo cửa hàng — không cho khách chỉnh tay khi thanh toán. */
+const STORE_SHIPPING_FEE = 15000;
 
 const STEPS: { num: Step; label: string; icon: React.ReactNode }[] = [
   { num: 1, label: "Giao hàng", icon: <MapPin size={16} /> },
@@ -29,7 +32,7 @@ export default function CheckoutPage() {
   const [receiverName, setReceiverName] = useState("");
   const [receiverPhone, setReceiverPhone] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
-  const [shippingFee, setShippingFee] = useState(15000);
+  const shippingFee = STORE_SHIPPING_FEE;
   const [paymentMethod, setPaymentMethod] = useState("ONLINE");
   const [mockOutcome, setMockOutcome] = useState("SUCCESS");
   const [submitting, setSubmitting] = useState(false);
@@ -79,13 +82,23 @@ export default function CheckoutPage() {
       const result = await api.checkout(orderId, paymentMethod);
 
       clearCart();
-      push(result.message || "Đặt hàng thành công!", result.status === "PAID" ? "success" : "info");
+      if (result.status !== "PAID") {
+        push(result.message || "Thanh toán chưa thành công.", "error");
+        navigate(`/customer/orders/${orderId}`);
+        return;
+      }
+      push(result.message || "Đặt hàng và Thanh toán thành công!", "success");
       navigate(`/customer/orders/${orderId}`);
     } catch (e) {
       setError(getErrorMessage(e, "Đặt hàng thất bại. Vui lòng thử lại."));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCancelCheckout = () => {
+    push("Bạn đã hủy đặt hàng", "info");
+    navigate("/customer/cart");
   };
 
   return (
@@ -120,7 +133,8 @@ export default function CheckoutPage() {
           </div>
           <div className="form-group">
             <label>Phí vận chuyển</label>
-            <Input type="number" min={0} value={shippingFee} onChange={(e) => setShippingFee(Number(e.target.value))} />
+            <p className="checkout-shipping-amount">{formatCurrency(shippingFee)}</p>
+            <p className="muted checkout-shipping-note">Mức phí do cửa hàng quy định, không thể thay đổi khi đặt hàng.</p>
           </div>
           <div className="wizard-nav">
             <button className="btn" onClick={() => navigate("/customer/cart")}>
@@ -161,7 +175,6 @@ export default function CheckoutPage() {
               <Select value={mockOutcome} onChange={(e) => setMockOutcome(e.target.value)}>
                 <option value="SUCCESS">SUCCESS - Thành công</option>
                 <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS - Không đủ số dư</option>
-                <option value="USER_CANCELLED">USER_CANCELLED - Người dùng hủy</option>
                 <option value="MAINTENANCE">MAINTENANCE - Bảo trì</option>
               </Select>
             </div>
@@ -231,8 +244,11 @@ export default function CheckoutPage() {
               >
                 {submitting ? <><Loader2 size={16} className="spin" /> Đang xử lý...</> : "Đặt hàng"}
               </button>
-              <button className="btn btn-full" onClick={() => setStep(2)}>
+              <button type="button" className="btn btn-full" disabled={submitting} onClick={() => setStep(2)}>
                 <ChevronLeft size={16} /> Quay lại
+              </button>
+              <button type="button" className="btn btn-danger btn-full" disabled={submitting} onClick={handleCancelCheckout}>
+                <XCircle size={16} /> Hủy đặt hàng
               </button>
             </div>
           </Card>

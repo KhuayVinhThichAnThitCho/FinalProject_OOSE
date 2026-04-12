@@ -47,7 +47,7 @@ export default function OrdersPage() {
           return (
             <Card key={String(vm.id)} className="order-card">
               <div className="order-card-header">
-                <span className="order-id">#{String(vm.id).slice(-8)}</span>
+                <span className="order-id">#{String(vm.id)}</span>
                 <StatusBadge status={vm.status} />
               </div>
               <div className="order-card-body">

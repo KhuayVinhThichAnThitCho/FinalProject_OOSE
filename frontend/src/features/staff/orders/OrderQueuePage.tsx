@@ -26,7 +26,7 @@ export default function OrderQueuePage() {
         rows={data.map((o) => {
           const vm = mapOrderSummaryVM(o);
           return [
-            `#${String(vm.id).slice(-8)}`,
+            String(vm.id),
             vm.dateText,
             vm.totalText,
             <StatusBadge status={vm.status} />,
